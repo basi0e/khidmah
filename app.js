@@ -60,6 +60,8 @@ const dayLabel = iso => new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{we
 function dayList(){const out=[];for(let i=0;i<7;i++){const x=new Date();x.setDate(x.getDate()+i);const iso=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
   const f=dayLabel(iso);out.push({iso,label:i===0?'Today':i===1?'Tomorrow':f.split(' ')[0].replace(',',''),sub:f.replace(/^\w+,?\s/,'')})}return out}
 function toE164(v){let d=String(v||'').replace(/[^\d+]/g,'');if(/^05\d{8}$/.test(d))return '+966'+d.slice(1);if(/^5\d{8}$/.test(d))return '+966'+d;if(/^966\d{9}$/.test(d))return '+'+d;if(/^\+\d{9,15}$/.test(d))return d;if(/^00\d{9,15}$/.test(d))return '+'+d.slice(2);return null}
+const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v||'').trim());
+const normEmail = v => String(v||'').trim().toLowerCase();
 function fmtPhone(p){if(!p)return '';p=String(p).replace(/\D/g,'');if(p.startsWith('966')&&p.length===12)return `+966 ${p.slice(3,5)} ${p.slice(5,8)} ${p.slice(8)}`;return '+'+p}
 function hoursText(pp){const d=pp.work_days||[6,0,1,2,3,4];let days;if(d.length===7)days='Daily';else if(d.length===6&&!d.includes(5))days='Sat – Thu';else days=[6,0,1,2,3,4,5].filter(x=>d.includes(x)).map(x=>DAYN[x]).join(', ');return `${days}, ${fmt12(pp.work_from)} – ${fmt12(pp.work_to)}`}
 function check(id,ok,msg){const f=document.getElementById('f-'+id);if(!f)return ok;f.classList.toggle('bad',!ok);const e=f.querySelector('.err');if(e){e.hidden=ok;if(msg)e.textContent=msg}return ok}
@@ -67,7 +69,7 @@ const radio = n => { const e = document.querySelector(`input[name="${n}"]:checke
 const one = x => Array.isArray(x) ? x[0] : x;
 async function q(p){ const { data, error, count } = await p; if (error) throw error; return count != null && data == null ? count : data; }
 async function cnt(p){ const { count, error } = await p; if (error) throw error; return count || 0; }
-function friendly(e){const m=(e&&e.message)||String(e);if(/Failed to fetch|NetworkError/i.test(m))return 'No connection. Check your internet and try again.';if(/rate limit|too many/i.test(m))return 'Too many tries. Wait a minute and try again.';if(/expired|invalid.*(otp|token)/i.test(m))return 'That code is wrong or has expired. Request a new one.';return m.replace(/^.*?: /,'')}
+function friendly(e){const m=(e&&e.message)||String(e);if(/Failed to fetch|NetworkError/i.test(m))return 'No connection. Check your internet and try again.';if(/rate limit|too many/i.test(m))return 'Too many tries. Wait a minute and try again.';if(/expired|invalid.*(otp|token)|token.*(expired|invalid)/i.test(m))return 'That code is wrong or has expired. Request a new one.';return m.replace(/^.*?: /,'')}
 let tt;function toast(m,bad){clearTimeout(tt);let t=$('.toast');if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.appendChild(t)}
   t.innerHTML=`${ic(bad?'alert-circle':'check-circle-2','width:18px;height:18px')}<span>${esc(m)}</span>`;icons();tt=setTimeout(()=>t.remove(),3600)}
 const fail = e => { console.error(e); toast(friendly(e), true); };
@@ -180,9 +182,9 @@ function authView(){
 function loginForm(){
   return `<form class="form" id="loginform" novalidate>
     <div class="formerr" id="autherr" hidden></div>
-    <label class="f" id="f-lphone">WhatsApp number<input id="lphone" inputmode="tel" autocomplete="tel" placeholder="05X XXX XXXX"><span class="err" hidden>Enter a Saudi number starting with 05, or a full number starting with +.</span></label>
-    <div class="wa">${ic('message-circle')}<span>We'll send a 6-digit login code to this number. No password needed.</span></div>
-    <button class="btn full" type="submit" id="sendbtn">${ic('message-circle')}Send code</button>
+    <label class="f" id="f-lemail">Email address<input id="lemail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"><span class="err" hidden>Enter a valid email address, like name@gmail.com.</span></label>
+    <div class="wa">${ic('mail')}<span>We'll email you a login code. No password needed.</span></div>
+    <button class="btn full" type="submit" id="sendbtn">${ic('mail')}Send code</button>
     <p style="margin:0;text-align:center;font-size:14px" class="muted">New to Khidmah? <button type="button" class="linkbtn" data-tab="register">Create an account</button></p>
   </form>`;
 }
@@ -193,7 +195,7 @@ function profileFields(prefix){
     </div></fieldset>
     <label class="f" id="f-rname"><span id="rname-l">Full name</span><input id="rname" autocomplete="name"><span class="err" hidden>Enter your name.</span></label>
     <div class="row2">
-      ${prefix==='reg'?`<label class="f" id="f-rphone">WhatsApp number<input id="rphone" inputmode="tel" autocomplete="tel" placeholder="05X XXX XXXX"><span class="err" hidden>Enter a Saudi number starting with 05, or a full number starting with +.</span></label>`:''}
+      ${prefix==='reg'?`<label class="f" id="f-remail">Email address<input id="remail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"><span class="err" hidden>Enter a valid email address, like name@gmail.com.</span></label>`:''}
       <label class="f">City<select id="rcity">${CITIES.map(c=>`<option>${c}</option>`).join('')}</select></label>
     </div>
     <div id="provfields" hidden class="form">
@@ -201,6 +203,9 @@ function profileFields(prefix){
       <fieldset id="f-rcats"><legend>Services you offer</legend><div class="opts">${CATS.map(c=>`<label class="opt"><input type="checkbox" name="rcat" id="rc-${c.id}" value="${c.id}"><span>${esc(c.name)}</span></label>`).join('')}</div><span class="err" hidden>Pick at least one service.</span></fieldset>
       <div class="row2">
         <label class="f" id="f-rprice"><span id="rprice-l">Starting price (SAR)</span><input id="rprice" type="number" inputmode="numeric" min="10" placeholder="e.g. 100"><span class="err" hidden>Enter a starting price of at least SAR 10.</span></label>
+        <label class="f" id="f-rcphone">Phone for customers<input id="rcphone" inputmode="tel" autocomplete="tel" placeholder="05X XXX XXXX"><span class="err" hidden>Enter a Saudi number starting with 05, or a full number starting with +.</span><small class="muted" style="font-weight:400">Shown to a customer only after you accept their booking.</small></label>
+      </div>
+      <div class="row2">
         <label class="f">Experience<select id="ryears"><option>Less than 1 yr</option><option>1–3 yrs experience</option><option selected>3–5 yrs experience</option><option>5–10 yrs experience</option><option>10+ yrs experience</option></select></label>
       </div>
     </div>
@@ -210,22 +215,23 @@ function registerForm(){
   return `<form class="form" id="regform" novalidate>
     <div class="formerr" id="autherr" hidden></div>
     ${profileFields('reg')}
-    <div class="wa">${ic('message-circle')}<span>Next, we'll send a code to your number to confirm it.</span></div>
-    <button class="btn full" type="submit" id="sendbtn">Verify number and create account</button>
+    <div class="wa">${ic('mail')}<span>Next, we'll email you a code to confirm your address.</span></div>
+    <button class="btn full" type="submit" id="sendbtn">Verify email and create account</button>
     <p style="margin:0;text-align:center;font-size:14px" class="muted">Already have an account? <button type="button" class="linkbtn" data-tab="login">Log in</button></p>
   </form>`;
 }
 function readProfileForm(form, needPhone){
   const prov = $('#role-p').checked;
   const ok = [check('rname', $('#rname').value.trim().length > 1), check('rterms', $('#rterms').checked)];
-  let phone = null;
-  if (needPhone) { phone = toE164($('#rphone').value); ok.push(check('rphone', !!phone)); }
+  let email = null, cphone = null;
+  if (needPhone) { email = normEmail($('#remail').value); ok.push(check('remail', emailOk(email))); }
   let cats = [];
-  if (prov) { cats = [...form.querySelectorAll('input[name=rcat]:checked')].map(x=>x.value); $('#f-rcats .err').hidden = cats.length > 0; ok.push(cats.length > 0, check('rprice', +$('#rprice').value >= 10)); }
+  if (prov) { cats = [...form.querySelectorAll('input[name=rcat]:checked')].map(x=>x.value); $('#f-rcats .err').hidden = cats.length > 0; cphone = toE164($('#rcphone').value);
+    ok.push(cats.length > 0, check('rprice', +$('#rprice').value >= 10), check('rcphone', !!cphone)); }
   if (ok.includes(false)) { const b = form.querySelector('.bad input'); b && b.focus(); return null; }
   const city = $('#rcity').value;
-  return { phone, profile: { role: prov ? 'provider' : 'customer', name: $('#rname').value.trim(), city },
-    provider: prov ? { provider_type: radio('ptype'), services: cats, price_from: +$('#rprice').value, experience: $('#ryears').value, districts: [...DISTRICTS[city]], vat_registered: radio('ptype')==='Company' } : null };
+  return { email, profile: { role: prov ? 'provider' : 'customer', name: $('#rname').value.trim(), city },
+    provider: prov ? { provider_type: radio('ptype'), services: cats, price_from: +$('#rprice').value, experience: $('#ryears').value, districts: [...DISTRICTS[city]], vat_registered: radio('ptype')==='Company', contact_phone: cphone } : null };
 }
 function syncProfileForm(form){
   const sync = () => { const prov = $('#role-p').checked; $('#provfields').hidden = !prov; $('#rname-l').textContent = prov ? 'Name or company name' : 'Full name';
@@ -235,20 +241,20 @@ function syncProfileForm(form){
 function otpForm(){
   const o = S.otp;
   return `<form class="form" id="otpform" novalidate>
-    <button type="button" class="back" id="otpback" style="margin:0">${ic('chevron-left')}Change number</button>
-    <div><h3 style="font-size:22px">Enter the code</h3><p class="muted" style="margin:6px 0 0">We sent a 6-digit code to <strong style="color:var(--ink);white-space:nowrap">${fmtPhone(o.phone)}</strong>.</p></div>
-    ${S.devMode ? `<div class="devcode" id="devcode">Test mode: real messages aren't connected yet, so your code appears here. <b id="devcodeval">Fetching…</b></div>` : ''}
-    <div class="otp" id="otpbox" role="group" aria-label="6-digit code">${[0,1,2,3,4,5].map(i=>`<input id="otp${i}" inputmode="numeric" maxlength="1" autocomplete="${i===0?'one-time-code':'off'}" aria-label="Digit ${i+1}">`).join('')}</div>
+    <button type="button" class="back" id="otpback" style="margin:0">${ic('chevron-left')}Change email</button>
+    <div><h3 style="font-size:22px">Enter the code</h3><p class="muted" style="margin:6px 0 0">We sent a login code to <strong style="color:var(--ink);overflow-wrap:anywhere">${esc(o.email)}</strong>. Check your inbox and spam folder.</p></div>
+    ${S.devMode ? `<div class="devcode" id="devcode">Test mode: emails aren't sent yet, so your code appears here. <b id="devcodeval">Fetching…</b></div>` : ''}
+    <label class="f" id="otpbox">Login code<input id="otpcode" class="codein" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code from the email" aria-label="Login code"></label>
     <div class="formerr" id="otperr" hidden></div>
     <button class="btn full" type="submit" id="otpbtn">${S.pending ? 'Verify and create account' : 'Log in'}</button>
     <div class="resend" id="resend"></div>
   </form>`;
 }
 let otpTimer = null;
-async function sendCode(phone){
-  const { error } = await sb.auth.signInWithOtp({ phone, options: { shouldCreateUser: true } });
+async function sendCode(email){
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
   if (error) throw error;
-  S.otp = { phone, resendAt: Date.now() + 60e3 };
+  S.otp = { email, resendAt: Date.now() + 60e3 };
   try { localStorage.setItem('kh_pending', JSON.stringify(S.pending || null)); } catch(e){}
   render();
 }
@@ -259,50 +265,46 @@ function bindAuth(){
   const busy = on => { btn.disabled = on; };
   const lf = $('#loginform');
   if (lf) lf.onsubmit = async e => { e.preventDefault(); err.hidden = true;
-    const phone = toE164($('#lphone').value); if (!check('lphone', !!phone)) return;
+    const email = normEmail($('#lemail').value); if (!check('lemail', emailOk(email))) return;
     S.pending = null; busy(true);
-    try { await sendCode(phone); } catch(ex) { err.textContent = friendly(ex); err.hidden = false; busy(false); }
+    try { await sendCode(email); } catch(ex) { err.textContent = friendly(ex); err.hidden = false; busy(false); }
   };
   const rf = $('#regform');
   if (rf) { syncProfileForm(rf);
     rf.onsubmit = async e => { e.preventDefault(); err.hidden = true;
       const d = readProfileForm(rf, true); if (!d) return;
       S.pending = { profile: d.profile, provider: d.provider }; busy(true);
-      try { await sendCode(d.phone); } catch(ex) { err.textContent = friendly(ex); err.hidden = false; busy(false); }
+      try { await sendCode(d.email); } catch(ex) { err.textContent = friendly(ex); err.hidden = false; busy(false); }
     };
   }
 }
 function bindOtp(){
-  const o = S.otp, boxes = [...app.querySelectorAll('.otp input')], err = $('#otperr');
-  const code = () => boxes.map(b => b.value).join('');
+  const o = S.otp, inp = $('#otpcode'), err = $('#otperr');
   if (S.devMode) {
-    const fetchCode = async (n) => { const { data } = await sb.rpc('dev_get_code', { p_phone: o.phone }); const el = $('#devcodeval'); if (!el) return;
-      if (data) el.textContent = data; else if (n < 6) setTimeout(() => fetchCode(n+1), 1000); else el.textContent = 'Not found. Check the Supabase hook is turned on.'; };
+    const fetchCode = async (n) => { const { data } = await sb.rpc('dev_get_code', { p_phone: o.email }); const el = $('#devcodeval'); if (!el) return;
+      if (data) el.textContent = data; else if (n < 6) setTimeout(() => fetchCode(n+1), 1000); else el.textContent = 'Not found. Check the Send Email hook is turned on in Supabase.'; };
     setTimeout(() => fetchCode(0), 700);
   }
   let verifying = false;
   const verify = async () => {
+    const code = inp.value.replace(/\D/g,'');
     if (verifying) return;
-    if (code().length < 6) { err.textContent = 'Enter all 6 digits of the code.'; err.hidden = false; return; }
+    if (code.length < 6) { err.textContent = 'Enter the full code from the email.'; err.hidden = false; return; }
     verifying = true; $('#otpbtn').disabled = true;
-    const { data, error } = await sb.auth.verifyOtp({ phone: o.phone, token: code(), type: 'sms' });
-    if (error) { verifying = false; $('#otpbtn').disabled = false; $('#otpbox').classList.add('bad'); err.textContent = friendly(error); err.hidden = false; boxes.forEach(b=>b.value=''); boxes[0].focus(); return; }
+    const { data, error } = await sb.auth.verifyOtp({ email: o.email, token: code, type: 'email' });
+    if (error) { verifying = false; $('#otpbtn').disabled = false; $('#otpbox').classList.add('bad'); err.textContent = friendly(error); err.hidden = false; inp.select(); return; }
     clearInterval(otpTimer); S.otp = null; S.session = data.session;
     try { await afterLogin(); } catch(ex) { fail(ex); }
   };
-  boxes.forEach((b,i) => {
-    b.oninput = () => { b.value = b.value.replace(/\D/g,'').slice(-1); $('#otpbox').classList.remove('bad'); err.hidden = true; if (b.value && i < 5) boxes[i+1].focus(); if (code().length === 6) verify(); };
-    b.onkeydown = e => { if (e.key==='Backspace' && !b.value && i>0) { boxes[i-1].focus(); boxes[i-1].value=''; } };
-    b.onpaste = e => { const t = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6); if (!t) return; e.preventDefault(); t.split('').forEach((d,k)=>{ if (boxes[k]) boxes[k].value = d }); if (t.length===6) verify(); };
-  });
-  boxes[0].focus();
+  inp.oninput = () => { inp.value = inp.value.replace(/\D/g,'').slice(0,10); $('#otpbox').classList.remove('bad'); err.hidden = true; };
+  inp.focus();
   $('#otpform').onsubmit = e => { e.preventDefault(); verify(); };
   $('#otpback').onclick = () => { clearInterval(otpTimer); S.otp = null; render(); };
   const tick = () => { const el = $('#resend'); if (!el || !S.otp) { clearInterval(otpTimer); return; }
     const left = Math.ceil((o.resendAt - Date.now())/1000);
     if (left > 0) el.textContent = `Didn't get it? You can request a new code in 0:${String(left).padStart(2,'0')}`;
     else if (!el.querySelector('button')) { el.innerHTML = `Didn't get it? <button type="button" class="linkbtn" id="resendbtn">Send a new code</button>`;
-      $('#resendbtn').onclick = () => sendCode(o.phone).then(() => toast('New code sent')).catch(fail); } };
+      $('#resendbtn').onclick = () => sendCode(o.email).then(() => toast('New code sent')).catch(fail); } };
   clearInterval(otpTimer); tick(); otpTimer = setInterval(tick, 1000);
 }
 async function afterLogin(){
@@ -323,7 +325,7 @@ async function createProfile(d){
 }
 function completeView(){
   return `<div class="wrap page"><div class="narrow stack">
-    <div class="sec-h" style="margin:0"><div><h2>Finish setting up your account</h2><p>Your number ${fmtPhone(S.session.user.phone)} is confirmed. Tell us a little about you.</p></div></div>
+    <div class="sec-h" style="margin:0"><div><h2>Finish setting up your account</h2><p>Your email ${esc(S.session.user.email)} is confirmed. Tell us a little about you.</p></div></div>
     <form class="card form" id="completeform" novalidate>${profileFields('complete')}<button class="btn full" type="submit">Create account</button></form>
   </div></div>`;
 }
@@ -523,17 +525,16 @@ async function accountView(){
   const u = S.me, since = new Date(u.created_at).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
   const item = (g,i,l,sub) => `<button data-go="${g}">${ic(i)}<span>${l}</span>${sub!=null?`<span class="sub">${sub}</span>`:''}${ic('chevron-right','width:18px;height:18px')}</button>`;
   let menu;
-  if (u.role==='customer') { const [a,f] = await Promise.all([cnt(sb.from('addresses').select('id',{count:'exact',head:true}).eq('user_id',uid())), cnt(sb.from('favorites').select('provider_id',{count:'exact',head:true}).eq('customer_id',uid()))]);
-    menu = [item('addresses','map-pin','Saved addresses',a),item('favorites','heart','Favourite providers',f),item('help','life-buoy','Help and support'),item('terms','file-text','Terms and privacy')]; }
-  else if (u.role==='provider') menu = [item('profile','store','My services and hours'),item('docs','shield-check','Verification documents',esc(S.pp&&S.pp.status)),item('reviews','star','Reviews'),item('earnings','wallet','Earnings'),item('help','life-buoy','Help and support'),item('terms','file-text','Terms and privacy')];
+  if (u.role==='customer') { const f = await cnt(sb.from('favorites').select('provider_id',{count:'exact',head:true}).eq('customer_id',uid()));
+    menu = [item('favorites','heart','Favourite providers',f),item('help','life-buoy','Help and support'),item('terms','file-text','Terms and privacy')]; }
+  else if (u.role==='provider') menu = [item('profile','store','My services and hours'),item('docs','shield-check','Verification',esc(S.pp&&S.pp.status)),item('reviews','star','Reviews'),item('earnings','wallet','Earnings'),item('help','life-buoy','Help and support'),item('terms','file-text','Terms and privacy')];
   else menu = [item('terms','file-text','Terms and privacy')];
   return `<div class="wrap page"><div class="narrow stack">
     <div class="card acct-head"><div class="ava">${esc(initials(u.name))}</div><div style="min-width:0"><h2 style="font-size:22px">${esc(u.name)}</h2>
-      <div class="muted">${u.role==='provider'?esc(S.pp&&S.pp.provider_type):u.role==='admin'?'Administrator':'Customer'} · ${fmtPhone(S.session.user.phone)} · ${esc(u.city)}</div><div class="muted sm-txt">Member since ${since}</div></div>
+      <div class="muted">${u.role==='provider'?esc(S.pp&&S.pp.provider_type):u.role==='admin'?'Administrator':'Customer'} · ${esc(S.session.user.email)} · ${esc(u.city)}</div><div class="muted sm-txt">Member since ${since}</div></div>
       <button class="btn ghost sm" style="margin-left:auto" data-a="editme">Edit</button></div>
     <div class="card" style="padding-block:6px"><div class="menu">${menu.join('')}</div></div>
-    <div class="actions"><button class="btn line" data-a="logout">${ic('log-out')}Log out</button></div>
-    <p class="muted sm-txt" style="margin:0">To delete your account and data, contact support from the Help page.</p>
+    <div class="actions"><button class="btn line" data-a="logout">${ic('log-out')}Log out</button>${u.role==='admin'?'':`<button class="btn line" style="color:var(--danger)" data-a="delacct">${ic('trash-2')}Delete my account</button>`}</div>
   </div></div>`;
 }
 async function addressesView(){
@@ -557,8 +558,8 @@ const FAQ = {
   customer:[['When do I pay?','After the job is done. You pay the technician by cash, mada card, Apple Pay or STC Pay, and you get a receipt in the app.'],
     ['What is the 30-day guarantee?','If the same problem comes back within 30 days of a completed job, open the booking and tap “Report a problem”. We arrange a free revisit or a refund of the labour.'],
     ['Can I change or cancel my booking?','Yes. Open the booking and use Reschedule or Cancel. Cancelling is free until the technician is on the way.'],
-    ['How are providers verified?','Each provider uploads an iqama or national ID, and companies upload their CR and municipality licence. Our team checks them before the Verified badge appears.']],
-  provider:[['How do I get the Verified badge?','Upload your documents under Account › Verification documents. Our team reviews them within 2 working days.'],
+    ['How are providers verified?','The Khidmah team contacts each provider and checks them directly, for example a company\'s Commercial Registration number, before the Verified badge appears.']],
+  provider:[['How do I get the Verified badge?','Go to Account › Verification and tap Request verification. Our team will contact you on your phone to check your details.'],
     ['When do I get paid?','Customers pay you directly after the job. Khidmah charges a platform fee on completed jobs, shown on your Earnings page.'],
     ['Can I pause new requests?','Yes. Turn off “Available for new jobs” under My services and hours. You stay hidden from search until you turn it back on.'],
     ["What if a customer doesn't show up?","Message them in the booking first. If you still can't reach them, cancel the job with the reason “Customer not reachable”."]]
@@ -569,7 +570,7 @@ async function helpView(){
     <div class="sec-h" style="margin:0"><div><h2>Help and support</h2><p>Answers to common questions, or send us a message</p></div></div>
     <div class="card"><h3>Common questions</h3>${(FAQ[role()]||FAQ.customer).map(([qq,a])=>`<details class="faq"><summary>${esc(qq)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
     <form class="card form" data-form="ticket" novalidate><h3 style="margin:0">Contact support</h3>
-      <label class="f">Topic<select name="subject"><option>Question about a booking</option><option>Payment issue</option><option>Account or login</option><option>Delete my account</option><option>Feedback or suggestion</option><option>Something else</option></select></label>
+      <label class="f">Topic<select name="subject"><option>Question about a booking</option><option>Payment issue</option><option>Account or login</option><option>Feedback or suggestion</option><option>Something else</option></select></label>
       <label class="f" id="f-tmsg">Message<textarea name="text" rows="4" placeholder="Tell us what happened. Include a booking number if you have one."></textarea><span class="err" hidden>Write a short message so we can help.</span></label>
       <div><button class="btn" type="submit">Send to support</button></div></form>
     ${mine.length?`<div class="card"><h3>Your tickets</h3>${mine.map(t=>`<div class="row" style="display:grid;gap:6px"><div class="bk-top"><div><span class="ref">${esc(t.ref)}</span><br><strong>${esc(t.subject)}</strong></div><span class="pill ${t.status==='Open'?'req':'done'}">${t.status}</span></div>
@@ -581,17 +582,17 @@ function termsBody(){
     <h3>Using Khidmah</h3><p>Khidmah connects customers with independent service providers and room owners in Saudi Arabia. Providers are responsible for the work they carry out.</p>
     <h3>Bookings and payments</h3><p>Prices shown are starting prices for labour. The final price, including any parts and VAT, is agreed before work starts and shown on the receipt.</p>
     <h3>Cancellations</h3><p>Customers can cancel free of charge until the provider is on the way.</p>
-    <h3>Your data</h3><p>We store your name, phone number, addresses and booking history to run the service, in line with Saudi Arabia's Personal Data Protection Law. Your number is shared with a provider only after they accept your booking.</p>
-    <h3>Verification</h3><p>Providers upload identification and, for companies, a Commercial Registration. Documents are used only for verification.</p></div>`;
+    <h3>Your data</h3><p>We store only your name, email address and city, plus your bookings. The phone number you enter on a booking is shown to the provider only after they accept it. We don't store home addresses or ID documents. You can delete your account and personal data at any time from the Account page. This follows Saudi Arabia's Personal Data Protection Law.</p>
+    <h3>Verification</h3><p>The Khidmah team checks each provider directly, for example a company's Commercial Registration number, before the Verified badge appears.</p></div>`;
 }
 function termsView(){ return `<div class="wrap page"><div class="narrow stack">${back(S.me?'account':'auth','Back')}<div class="sec-h" style="margin:0"><div><h2>Terms and privacy</h2></div></div><div class="card">${termsBody()}</div></div></div>`; }
 
 /* ================= 7. Provider screens ================= */
 function verifyBanner(pp){
   if (pp.status==='Verified') return '';
-  if (pp.status==='Under review') return `<div class="banner">${ic('hourglass')}<div><strong>Documents under review</strong><p>Our team is checking your documents. The Verified badge appears once approved.</p></div></div>`;
-  if (pp.status==='Rejected') return `<div class="banner bad">${ic('shield-x')}<div><strong>Verification not approved</strong><p>${esc(pp.reject_reason||'Please upload clearer documents.')}</p><button class="btn sm" data-go="docs">Upload again</button></div></div>`;
-  return `<div class="banner">${ic('shield-alert')}<div><strong>Get verified to win more jobs</strong><p>Customers prefer providers with the Verified badge. Upload your documents to start the check.</p><button class="btn sm" data-go="docs">Upload documents</button></div></div>`;
+  if (pp.status==='Under review') return `<div class="banner">${ic('hourglass')}<div><strong>Verification requested</strong><p>The Khidmah team will contact you on ${esc(fmtPhone(pp.contact_phone))} to check your details.</p></div></div>`;
+  if (pp.status==='Rejected') return `<div class="banner bad">${ic('shield-x')}<div><strong>Verification not approved</strong><p>${esc(pp.reject_reason||'Contact support for details.')}</p><button class="btn sm" data-go="docs">Request again</button></div></div>`;
+  return `<div class="banner">${ic('shield-alert')}<div><strong>Get verified to win more jobs</strong><p>Customers prefer providers with the Verified badge. Ask the Khidmah team to verify you.</p><button class="btn sm" data-go="docs">Request verification</button></div></div>`;
 }
 async function jobsView(){
   await loadMe();
@@ -634,6 +635,7 @@ async function profileView(){
         <fieldset id="f-pcats"><legend>Services you offer</legend><div class="opts">${CATS.map(c=>`<label class="opt"><input type="checkbox" name="svc" value="${c.id}" ${pp.services.includes(c.id)?'checked':''}><span>${esc(c.name)}</span></label>`).join('')}</div><span class="err" hidden>Pick at least one service.</span></fieldset>
         <div class="row2"><label class="f" id="f-pprice">${pp.provider_type.startsWith('Landlord')?'Monthly rent from (SAR)':'Starting price for labour (SAR)'}<input name="price" type="number" min="10" value="${+pp.price_from}"><span class="err" hidden>Enter a price of at least SAR 10.</span></label>
           <label class="f">City<select name="city">${CITIES.map(c=>`<option ${u.city===c?'selected':''}>${c}</option>`).join('')}</select></label></div>
+        <label class="f" id="f-pphone">Phone for customers<input name="cphone" inputmode="tel" value="${esc(pp.contact_phone||'')}" placeholder="05X XXX XXXX"><span class="err" hidden>Enter a Saudi number starting with 05, or a full number starting with +.</span></label>
         <label class="check"><input type="checkbox" name="vat" ${pp.vat_registered?'checked':''}><span>I'm registered for VAT, so add 15% VAT to my bills</span></label>
       </div>
       <div class="card form">
@@ -648,17 +650,14 @@ async function profileView(){
 }
 async function docsView(){
   await loadMe();
-  const pp = S.pp, req = DOCS[pp.provider_type] || DOCS['Individual technician'];
-  const docs = await q(sb.from('documents').select('*').eq('provider_id',uid()).order('uploaded_at',{ascending:false}));
-  const have = t => docs.find(d=>d.doc_type===t), missing = req.filter(([t,r])=>r&&!have(t)).length, locked = ['Under review','Verified'].includes(pp.status);
+  const pp = S.pp, locked = ['Under review','Verified'].includes(pp.status);
+  const needs = pp.provider_type==='Company' ? 'your Commercial Registration (CR) number' : pp.provider_type.startsWith('Landlord') ? 'that you own or manage the room' : 'your trade and experience';
   return `<div class="wrap page"><div class="narrow stack">${back('account','Account')}
-    <div class="sec-h" style="margin:0"><div><h2>Verification documents</h2><p>Status: <span class="pill ${pp.status==='Verified'?'ok':pp.status==='Rejected'?'can':'req'}">${esc(pp.status)}</span></p></div></div>
+    <div class="sec-h" style="margin:0"><div><h2>Verification</h2><p>Status: <span class="pill ${pp.status==='Verified'?'ok':pp.status==='Rejected'?'can':'req'}">${esc(pp.status)}</span></p></div></div>
     ${pp.status==='Rejected'?`<div class="banner bad">${ic('shield-x')}<div><strong>Not approved</strong><p>${esc(pp.reject_reason||'')}</p></div></div>`:''}
-    <div class="card">${req.map(([t,r])=>{const d=have(t);return `<div class="row"><div><strong>${esc(t)}</strong> ${r?'':'<span class="muted sm-txt">(optional)</span>'}<div class="muted sm-txt">${d?`${ic('file-check','width:14px;height:14px;vertical-align:-2px;color:var(--accent)')} ${esc(d.file_name)} · uploaded ${timeAgo(d.uploaded_at)}`:'Not uploaded yet · PDF, JPG or PNG, up to 10 MB'}</div></div>
-      ${locked?'':`<label class="btn ${d?'ghost':'line'} sm filebtn">${ic('upload')}${d?'Replace':'Upload'}<input type="file" accept=".pdf,image/*" data-doc="${esc(t)}" aria-label="Upload ${esc(t)}"></label>`}</div>`}).join('')}</div>
-    ${locked?`<p class="muted" style="margin:0">${pp.status==='Verified'?'You are verified. Contact support if your documents change.':'Your documents are being reviewed.'}</p>`
-      :`<div class="actions"><button class="btn" data-a="submitdocs" ${missing?'disabled':''}>Submit for review</button>${missing?`<span class="muted sm-txt">Upload ${missing} more required document${missing>1?'s':''} first</span>`:''}</div>
-      <p class="muted sm-txt" style="margin:0">Files are stored privately. Only you and the Khidmah review team can open them.</p>`}
+    <div class="card"><h3>How it works</h3><p style="margin:0">Khidmah doesn't collect ID documents in the app. Instead, our team contacts you on <strong>${esc(fmtPhone(pp.contact_phone))}</strong> and checks ${needs}. Once approved, the Verified badge appears on your profile.</p></div>
+    ${locked?`<p class="muted" style="margin:0">${pp.status==='Verified'?'You are verified.':'Your request is with our team. We will contact you soon.'}</p>`
+      :`<div class="actions"><button class="btn" data-a="submitdocs">${ic('shield-check')}Request verification</button></div>`}
   </div></div>`;
 }
 async function reviewsView(){
@@ -684,22 +683,21 @@ async function aOverview(){
   return `<div class="wrap page"><div class="sec-h"><div><h2>Overview</h2><p>Khidmah across Riyadh and Dammam</p></div></div>
     <div class="stats four"><div class="stat"><b>${cust}</b><span>Customers</span></div><div class="stat"><b>${ver} / ${prov}</b><span>Verified providers</span></div><div class="stat"><b>${bks}</b><span>Bookings</span></div><div class="stat"><b>${req}</b><span>Waiting for a provider</span></div></div>
     <div class="bgrid"><div class="stack"><div class="card"><h3>Needs attention</h3>
-      <div class="row"><div><strong>Providers waiting for verification</strong><div class="muted sm-txt">Check documents and approve or reject</div></div><button class="btn sm" data-go="aproviders">${rev} to review</button></div>
+      <div class="row"><div><strong>Providers waiting for verification</strong><div class="muted sm-txt">Call them, check their CR or trade, then approve or reject</div></div><button class="btn sm" data-go="aproviders">${rev} to review</button></div>
       <div class="row"><div><strong>Open support tickets</strong><div class="muted sm-txt">Customers and providers waiting for a reply</div></div><button class="btn sm" data-go="atickets">${tick} open</button></div></div></div>
     <div class="stack"><div class="card"><h3>Latest bookings</h3>${latest.length?latest.map(b=>`<button class="notif" style="padding:10px 0" data-go="booking" data-id="${b.id}"><span style="flex:1;min-width:0"><strong>${esc(b.service)}</strong><small>${esc(b.customer&&b.customer.name)} → ${esc(b.provider&&b.provider.name)} · ${timeAgo(b.created_at)}</small></span>${pillFor(b.status,'admin')}</button>`).join(''):'<p class="muted" style="margin:0">No bookings yet.</p>'}</div>
       <div class="card"><h3>New sign-ups</h3>${people.length?people.map(u=>`<div class="row"><div><strong>${esc(u.name)}</strong><div class="muted sm-txt">${u.role==='provider'?'Provider':'Customer'} · ${esc(u.city)} · ${timeAgo(u.created_at)}</div></div></div>`).join(''):'<p class="muted" style="margin:0">No sign-ups yet.</p>'}</div></div></div></div>`;
 }
 async function aProviders(){
   const all = await q(sb.from('provider_profiles').select('*, profile:profiles!provider_profiles_user_id_fkey(name, city, created_at)').order('updated_at',{ascending:false}));
-  const docs = await q(sb.from('documents').select('*').order('uploaded_at',{ascending:false}));
   const g = {review:all.filter(u=>u.status==='Under review'),pending:all.filter(u=>u.status==='Pending verification'),verified:all.filter(u=>u.status==='Verified'),rejected:all.filter(u=>u.status==='Rejected')};
   const list = g[S.aseg] || [];
   return `<div class="wrap page"><div class="sec-h"><div><h2>Providers</h2><p>Verify documents and manage provider accounts</p></div></div>
-    <div class="segs">${[['review','Under review'],['pending','No documents yet'],['verified','Verified'],['rejected','Rejected']].map(([k,l])=>`<button data-a="seg" data-k="aseg" data-v="${k}" aria-pressed="${S.aseg===k}">${l} (${g[k].length})</button>`).join('')}</div>
-    ${list.length?`<div class="list two">${list.map(pp=>{const d=docs.filter(x=>x.provider_id===pp.user_id);return `<article class="bk">
+    <div class="segs">${[['review','Asked to verify'],['pending','Not requested'],['verified','Verified'],['rejected','Rejected']].map(([k,l])=>`<button data-a="seg" data-k="aseg" data-v="${k}" aria-pressed="${S.aseg===k}">${l} (${g[k].length})</button>`).join('')}</div>
+    ${list.length?`<div class="list two">${list.map(pp=>{return `<article class="bk">
       <div class="bk-top"><div><strong>${esc(pp.profile&&pp.profile.name)}</strong><div class="muted sm-txt">${esc(pp.provider_type)} · ${esc(pp.profile&&pp.profile.city)} · joined ${timeAgo(pp.profile&&pp.profile.created_at)}</div></div><span class="pill ${pp.status==='Verified'?'ok':pp.status==='Rejected'?'can':'req'}">${esc(pp.status)}</span></div>
       <dl class="kv"><dt>Services</dt><dd>${pp.services.map(s=>esc(catById(s).name)).join(', ')}</dd><dt>From</dt><dd>${money(pp.price_from)}</dd>
-        <dt>Documents</dt><dd>${d.length?d.map(x=>`<button class="linkbtn sm-txt" data-a="opendoc" data-path="${esc(x.file_path)}">${ic('file-text','width:14px;height:14px;vertical-align:-2px')} ${esc(x.doc_type)}</button>`).join('<br>'):'<span class="muted">None uploaded</span>'}</dd>
+        <dt>Phone</dt><dd>${pp.contact_phone?`<span class="phone">${fmtPhone(pp.contact_phone)} <button class="copy" data-a="copy" data-text="${esc(fmtPhone(pp.contact_phone))}">Copy</button></span>`:'<span class="muted">Not given</span>'}</dd>
         ${pp.status==='Rejected'&&pp.reject_reason?`<dt>Reason</dt><dd>${esc(pp.reject_reason)}</dd>`:''}</dl>
       <div class="actions">
         ${pp.status==='Under review'?`<button class="btn sm" data-a="approve" data-id="${pp.user_id}">${ic('check')}Approve</button><button class="btn line sm" data-a="reject" data-id="${pp.user_id}">Reject</button>`:''}
@@ -744,8 +742,8 @@ function dayFields(prefix){
 async function openBook(pid, catId){
   const p = await q(sb.from('provider_cards').select('*').eq('id',pid).maybeSingle());
   if (!p || !p.available) return toast('This provider is not taking new jobs right now', true);
-  const c = catById(catId || p.services[0]), addrs = await q(sb.from('addresses').select('*').eq('user_id',uid()).order('created_at'));
-  const room = !!c.rooms;
+  const c = catById(catId || p.services[0]);
+  const room = !!c.rooms; let lastPhone = ''; try { lastPhone = localStorage.getItem('kh_phone') || ''; } catch(e){}
   sheet(room?'Request a viewing':'Book '+p.name, `${esc(room?p.name:c.name)} · ${+p.review_count?'★ '+(+p.rating).toFixed(1):'New on Khidmah'} · ${esc(S.city)}`,
   `<form class="form" data-form="book" data-id="${p.id}" data-cat="${c.id}" novalidate>
     ${room?'':`<label class="f">What do you need?<select name="svc">${c.subs.map(s=>`<option>${esc(s)}</option>`).join('')}</select></label>
@@ -753,20 +751,17 @@ async function openBook(pid, catId){
       <label class="opt wide"><input type="radio" name="when" value="later" checked><span><strong>${ic('calendar','width:16px;height:16px')}Schedule</strong><small>Pick a day and time</small></span></label>
       <label class="opt wide"><input type="radio" name="when" value="asap"><span><strong>${ic('zap','width:16px;height:16px')}As soon as possible</strong><small>Urgent, today</small></span></label></div></fieldset>`}
     ${dayFields('b')}
-    ${room?'':`<fieldset><legend>Address</legend><div class="opts">
-      ${addrs.map((a,i)=>`<label class="opt wide"><input type="radio" name="addr" value="${a.id}" ${i===0?'checked':''}><span>${esc(a.label)}<small>${esc(a.district)} · ${esc(a.detail)}</small></span></label>`).join('')}
-      <label class="opt wide"><input type="radio" name="addr" value="new" ${addrs.length?'':'checked'}><span>${addrs.length?'Another address':'New address'}<small>Enter it below</small></span></label></div></fieldset>
-    <div id="newaddr" class="form" ${addrs.length?'hidden':''}>
-      <div class="row2"><label class="f">District<select name="district">${DISTRICTS[S.city].map(d=>`<option>${d}</option>`).join('')}</select></label>
-      <label class="f" id="f-bdetail">Building, street, landmark<input name="detail" placeholder="e.g. Villa 12, near Panda"><span class="err" hidden>Add the building and street.</span></label></div>
-      <label class="check"><input type="checkbox" name="saveaddr" checked><span>Save this address for next time</span></label></div>`}
+    <div class="row2">
+      ${room?'':`<label class="f">Your district<select name="district">${DISTRICTS[S.city].map(d=>`<option>${d}</option>`).join('')}</select></label>`}
+      <label class="f" id="f-bphone">Your phone<input name="phone" inputmode="tel" autocomplete="tel" placeholder="05X XXX XXXX" value="${esc(lastPhone)}"><span class="err" hidden>Enter a Saudi number starting with 05, or a full number starting with +.</span></label>
+    </div>
+    <p class="muted sm-txt" style="margin:-4px 0 0">Your phone is shown to ${room?'the owner':'the provider'} only after they accept. Share your exact location in the chat then.</p>
     <label class="f">${room?'Message to the owner':'Describe the problem'} (optional)<textarea name="note" rows="2" maxlength="1000" placeholder="${room?'e.g. Working in Olaya, looking to move in next month':'e.g. Split AC in the bedroom is not cooling and water is dripping'}"></textarea></label>
     ${room?'':`<fieldset><legend>Pay after the job with</legend><div class="opts">${PAY.map((t,i)=>`<label class="opt"><input type="radio" name="pay" value="${t}" ${i===0?'checked':''}><span>${t}</span></label>`).join('')}</div></fieldset>`}
     <div class="sum"><div class="price"><small>${room?'Rent from':'Labour from'}</small><b>SAR ${+p.price_from}</b>${room?' <span class="muted">/ month</span>':''}</div><button class="btn" type="submit">${ic('check')}Send request</button></div>
   </form>`);
   const f = layer.querySelector('form');
   f.querySelectorAll('input[name=when]').forEach(r=>r.onchange=()=>f.querySelectorAll('[data-when]').forEach(x=>x.hidden=radio('when')==='asap'));
-  f.querySelectorAll('input[name=addr]').forEach(r=>r.onchange=()=>$('#newaddr').hidden=radio('addr')!=='new');
   f._p = p;
 }
 function reasonSheet(title, sub, form, id, reasons){
@@ -809,7 +804,7 @@ const ACT = {
   editme: () => sheet('Edit your details','',`<form class="form" data-form="editme" novalidate>
     <label class="f" id="f-ename">${role()==='provider'?'Name or company name':'Full name'}<input name="pname" value="${esc(S.me.name)}"><span class="err" hidden>Enter your name.</span></label>
     <label class="f">City<select name="city">${CITIES.map(c=>`<option ${S.me.city===c?'selected':''}>${c}</option>`).join('')}</select></label>
-    <p class="muted sm-txt" style="margin:0">Your phone number is used to log in. Contact support to change it.</p><button class="btn full" type="submit">Save</button></form>`),
+    <p class="muted sm-txt" style="margin:0">Your email address is used to log in. Contact support to change it.</p><button class="btn full" type="submit">Save</button></form>`),
   deladdr: a => busyRun(a, async () => { await q(sb.from('addresses').delete().eq('id',a.dataset.id)); toast('Address removed'); render(true); }),
   cancel: a => reasonSheet('Cancel booking','The provider will be notified','cancel',a.dataset.id,['My plans changed','I found another provider','The provider asked me to cancel','I booked by mistake','Other reason']),
   pcancel: a => reasonSheet('Cancel job','The customer will be notified','pcancel',a.dataset.id,['Customer not reachable',"Emergency, I can't make it",'Job is bigger than described','Other reason']),
@@ -829,7 +824,9 @@ const ACT = {
     toast({Accepted:"Accepted. The customer's number is now visible",'On the way':'Customer told you are on the way','In progress':'Job started',Completed:'Viewing marked as done'}[a.dataset.v]||'Updated');
     if (a.dataset.v==='Accepted' && S.view==='jobs') S.seg='upcoming'; render(true); refreshCounts(); }),
   finish: a => billSheet(a.dataset.id).catch(fail),
-  submitdocs: a => busyRun(a, async () => { await q(sb.from('provider_profiles').update({status:'Under review'}).eq('user_id',uid())); toast('Documents sent for review'); render(true); }),
+  submitdocs: a => busyRun(a, async () => { await q(sb.from('provider_profiles').update({status:'Under review'}).eq('user_id',uid())); toast('Verification requested'); render(true); }),
+  delacct: a => { const w = a.parentElement; w.innerHTML = `<span>Delete your account, bookings contact details and reviews you received? This can't be undone.</span><button class="btn danger sm" data-a="delyes">Delete my account</button><button class="btn ghost sm" data-a="retry">Keep it</button>`; },
+  delyes: a => busyRun(a, async () => { await q(sb.rpc('delete_my_account')); await sb.auth.signOut(); S.session = null; S.me = null; S.pp = null; stopRealtime(); go('auth'); toast('Your account was deleted'); }),
   approve: a => busyRun(a, async () => { await q(sb.from('provider_profiles').update({status:'Verified',reject_reason:null}).eq('user_id',a.dataset.id)); toast('Provider verified'); render(true); refreshCounts(); }),
   revoke: a => busyRun(a, async () => { await q(sb.from('provider_profiles').update({status:'Pending verification'}).eq('user_id',a.dataset.id)); toast('Verified badge removed'); render(true); }),
   opendoc: a => busyRun(a, async () => { const { data, error } = await sb.storage.from('provider-docs').createSignedUrl(a.dataset.path, 120); if (error) throw error; window.open(data.signedUrl, '_blank', 'noopener'); })
@@ -840,14 +837,11 @@ const val = (f, n) => (f.elements[n] ? String(f.elements[n].value).trim() : '');
 const FORMS = {
   async book(f){
     const p = f._p, c = catById(f.dataset.cat), room = !!c.rooms, asap = !room && radio('when')==='asap';
-    let district = DISTRICTS[S.city][0], address = '';
-    if (!room) {
-      if (radio('addr')==='new') { district = val(f,'district'); address = val(f,'detail'); if (!check('bdetail', address.length > 2)) return;
-        if (f.elements.saveaddr.checked) await q(sb.from('addresses').insert({ user_id: uid(), label: 'Home', district, detail: address })); }
-      else { const a = one(await q(sb.from('addresses').select('*').eq('id',radio('addr')))); district = a.district; address = a.detail; }
-    } else { district = (p.districts||[])[0] || DISTRICTS[S.city][0]; }
+    const phone = toE164(val(f,'phone')); if (!check('bphone', !!phone)) return;
+    try { localStorage.setItem('kh_phone', val(f,'phone')); } catch(e){}
+    const district = room ? ((p.districts||[])[0] || DISTRICTS[S.city][0]) : val(f,'district');
     const b = await q(sb.from('bookings').insert({
-      category: c.id, kind: room?'room':'service', service: room?'Room viewing':val(f,'svc'), customer_id: uid(), provider_id: p.id, city: S.city, district, address,
+      category: c.id, kind: room?'room':'service', service: room?'Room viewing':val(f,'svc'), customer_id: uid(), provider_id: p.id, city: S.city, district, customer_phone: phone,
       note: val(f,'note') || null, visit_date: asap ? dayList()[0].iso : radio('bday'), visit_slot: asap ? 'As soon as possible' : radio('bslot'), urgent: asap,
       pay_method: room ? 'Monthly rent' : radio('pay') }).select('id, ref').single());
     closeSheet(); go('booking', { id: b.id }); toast(`Request ${b.ref} sent to ${p.name}`); refreshCounts();
@@ -879,9 +873,9 @@ const FORMS = {
     await q(sb.from('addresses').insert({ user_id: uid(), label: val(f,'label'), district: val(f,'district'), detail: d })); render(true); toast('Address saved'); },
   async profile(f){
     const g = n => [...f.querySelectorAll(`input[name=${n}]:checked`)].map(x=>x.value), svc = g('svc');
-    $('#f-pcats .err').hidden = svc.length > 0; const okp = check('pprice', +f.elements.price.value >= 10); if (!svc.length || !okp) return;
+    $('#f-pcats .err').hidden = svc.length > 0; const okp = check('pprice', +f.elements.price.value >= 10); const cph = toE164(val(f,'cphone')); const okc = check('pphone', !!cph); if (!svc.length || !okp || !okc) return;
     const city = val(f,'city'), cityChanged = city !== S.me.city;
-    await q(sb.from('provider_profiles').update({ available: f.elements.available.checked, about: val(f,'about') || null, services: svc, price_from: +f.elements.price.value, vat_registered: f.elements.vat.checked,
+    await q(sb.from('provider_profiles').update({ contact_phone: cph, available: f.elements.available.checked, about: val(f,'about') || null, services: svc, price_from: +f.elements.price.value, vat_registered: f.elements.vat.checked,
       districts: cityChanged ? [...DISTRICTS[city]] : g('dist'), work_days: g('day').map(Number), work_from: val(f,'from'), work_to: val(f,'to'), languages: g('lang').length ? g('lang') : ['Arabic'] }).eq('user_id', uid()));
     if (cityChanged) await q(sb.from('profiles').update({ city }).eq('id', uid()));
     await loadMe(); render(true); toast('Changes saved');
