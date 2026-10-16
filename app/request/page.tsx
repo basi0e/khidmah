@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Icon } from "@/components/Icon";
@@ -73,10 +73,12 @@ export default function RequestPage() {
   const [error, setError] = useState("");
   const [bookedRef, setBookedRef] = useState("");
 
-  const days = useMemo(() => nextDays(7), []);
+  const [days, setDays] = useState<{ iso: string; label: string }[]>([]);
 
   // Read the choices from the home page and who is logged in
   useEffect(() => {
+    const week = nextDays(7);
+    setDays(week);
     const q = new URLSearchParams(window.location.search);
     const s = findService(q.get("service"));
     setService(s);
@@ -98,10 +100,10 @@ export default function RequestPage() {
       const c = qCity && DISTRICTS[qCity] ? qCity : profileCity ?? "Riyadh";
       setCity(c);
       setDistrict(DISTRICTS[c][0]);
-      if (w === "today") setDay(days[0].iso);
+      if (w === "today") setDay(week[0].iso);
       setReady(true);
     });
-  }, [supabase, days]);
+  }, [supabase]);
 
   // Load providers for this service and city
   useEffect(() => {
@@ -198,7 +200,7 @@ export default function RequestPage() {
                 {chosen?.profile.name} accepts.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="/" className={primaryBtn}>Back to home</Link>
+                <Link href="/account" className={primaryBtn}>See my bookings</Link>
               </div>
             </Panel>
           )}

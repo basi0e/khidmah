@@ -277,7 +277,9 @@ export default function LoginPage() {
                   {role === "provider" ? "Booking requests will show up in your account." : "Ready to book a service."}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <a href="/#services" className={primaryBtn}>Browse services</a>
+                  <a href={role === "provider" ? "/provider" : "/account"} className={primaryBtn}>
+                    {role === "provider" ? "Go to your jobs" : "My bookings"}
+                  </a>
                   <button className="rounded-full border-2 border-ink px-6 py-3 font-semibold hover:bg-mist" onClick={signOut}>
                     Log out
                   </button>
