@@ -35,6 +35,8 @@ export type BookingRow = {
   created_at: string;
   provider_id: string;
   customer_id: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 export const FLOW = ["Requested", "Accepted", "On the way", "In progress", "Completed"];
@@ -111,5 +113,18 @@ export function BillView({ bill, vatRegistered = false }: { bill: Bill; vatRegis
         <dd className="mt-1 border-t border-line pt-2 text-lg font-bold tabular-nums">SAR {Number(bill.total ?? 0).toFixed(2)}</dd>
       </dl>
     </div>
+  );
+}
+
+export function MapsButton({ b, label = "Open in Google Maps" }: { b: Pick<BookingRow, "lat" | "lng">; label?: string }) {
+  if (b.lat == null || b.lng == null) return null;
+  return (
+    <a href={`https://www.google.com/maps/search/?api=1&query=${b.lat.toFixed(6)},${b.lng.toFixed(6)}`} target="_blank" rel="noopener noreferrer"
+      className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong bg-paper px-4 text-[15px] font-semibold text-palm-deep hover:bg-soft">
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" />
+      </svg>
+      {label}
+    </a>
   );
 }

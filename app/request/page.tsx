@@ -8,6 +8,7 @@ import { Icon } from "@/components/Icon";
 import { Illustration } from "@/components/Illustration";
 import { Chip, inputCls, labelCls, primaryBtn, ghostBtn } from "@/components/ui";
 import { UiIcon } from "@/components/NavIcons";
+import { LocationPicker, type LatLng } from "@/components/LocationPicker";
 import { ALL_SERVICES, DISTRICTS, PAY_METHODS, SLOTS, findService, type Service } from "@/lib/services";
 
 type Provider = {
@@ -62,7 +63,8 @@ export default function RequestPage() {
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
   const [pay, setPay] = useState("Cash");
-  const [saved, setSaved] = useState<{ id: string; label: string; district: string; detail: string }[]>([]);
+  const [saved, setSaved] = useState<{ id: string; label: string; district: string; detail: string; lat?: number | null; lng?: number | null }[]>([]);
+  const [pin, setPin] = useState<LatLng | null>(null);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -92,7 +94,10 @@ export default function RequestPage() {
         const { data: p } = await supabase.from("profiles").select("role, city").eq("id", user.id).maybeSingle();
         if (p) {
           setMe({ id: user.id, role: p.role, city: p.city });
-          const { data: addr } = await supabase.from("addresses").select("id, label, district, detail").eq("user_id", user.id).order("created_at");
+          const withLoc = await supabase.from("addresses").select("id, label, district, detail, lat, lng").eq("user_id", user.id).order("created_at");
+          const addr = withLoc.error
+            ? (await supabase.from("addresses").select("id, label, district, detail").eq("user_id", user.id).order("created_at")).data
+            : withLoc.data;
           setSaved(addr ?? []);
           profileCity = p.city;
         }
@@ -138,9 +143,7 @@ export default function RequestPage() {
     if (!service || !chosen || !me) return;
     setBusy(true);
     setError("");
-    const { data, error } = await supabase
-      .from("bookings")
-      .insert({
+    const base = {
         category: service.slug,
         kind: isRoom ? "room" : "service",
         service: sub,
@@ -155,11 +158,21 @@ export default function RequestPage() {
         urgent: asap,
         pay_method: isRoom ? "Monthly rent" : pay,
         customer_phone: phone.trim() || null,
-      })
-      .select("ref")
-      .single();
+    };
+    const withPin = pin ? { ...base, lat: pin.lat, lng: pin.lng } : base;
+    let { data, error } = await supabase.from("bookings").insert(withPin).select("ref").single();
+    if (error && pin && /lat|lng|column/i.test(error.message)) {
+      // Location columns not added yet: keep the pin as a Google Maps link in the note
+      const link = `https://www.google.com/maps/search/?api=1&query=${pin.lat.toFixed(6)},${pin.lng.toFixed(6)}`;
+      ({ data, error } = await supabase
+        .from("bookings")
+        .insert({ ...base, note: [base.note, `Location: ${link}`].filter(Boolean).join("\n") })
+        .select("ref")
+        .single());
+    }
     setBusy(false);
     if (error) return setError(error.message);
+    if (!data) return setError("Couldn't send the request. Please try again.");
     setBookedRef(data.ref);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -391,7 +404,7 @@ export default function RequestPage() {
                       <h2 className="mb-3 font-semibold">Saved addresses</h2>
                       <div className="flex flex-wrap gap-2">
                         {saved.filter((a) => DISTRICTS[city].includes(a.district)).map((a) => (
-                          <Chip key={a.id} selected={address === a.detail && district === a.district} onClick={() => { setAddress(a.detail); setDistrict(a.district); }}>
+                          <Chip key={a.id} selected={address === a.detail && district === a.district} onClick={() => { setAddress(a.detail); setDistrict(a.district); if (a.lat != null && a.lng != null) setPin({ lat: a.lat, lng: a.lng }); }}>
                             {a.label}, {a.district}
                           </Chip>
                         ))}
@@ -400,8 +413,14 @@ export default function RequestPage() {
                   )}
                   {!isRoom && (
                     <section>
+                      <h2 className="mb-3 font-semibold">Your location on the map</h2>
+                      <LocationPicker value={pin} onChange={setPin} city={city} />
+                    </section>
+                  )}
+                  {!isRoom && (
+                    <section>
                       <label className={labelCls} htmlFor="address">Address in {district}</label>
-                      <input id="address" className={inputCls} autoComplete="street-address" placeholder="Building, street, apartment number"
+                      <input id="address" className={inputCls} autoComplete="street-address" placeholder="Building, floor, apartment number"
                         value={address} onChange={(e) => setAddress(e.target.value)} />
                     </section>
                   )}
@@ -431,7 +450,7 @@ export default function RequestPage() {
                       <dt className="text-muted">Job</dt><dd>{sub}</dd>
                       <dt className="text-muted">{isRoom ? "Landlord" : "Provider"}</dt><dd>{chosen?.profile.name}</dd>
                       <dt className="text-muted">When</dt><dd>{asap ? "As soon as possible" : `${dayText}, ${slot}`}</dd>
-                      {!isRoom && <><dt className="text-muted">Where</dt><dd>{district}, {city}</dd></>}
+                      {!isRoom && <><dt className="text-muted">Where</dt><dd>{district}, {city}{pin ? ", pin on map" : ""}</dd></>}
                       {chosen?.price_from != null && <><dt className="text-muted">Starts from</dt><dd>SAR {chosen.price_from}</dd></>}
                     </dl>
                   </section>

@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Illustration } from "@/components/Illustration";
 import { Chip, Panel, Segmented, inputCls, labelCls, primaryBtn, ghostBtn } from "@/components/ui";
 import { UiIcon } from "@/components/NavIcons";
-import { ACTIVE, BillView, BookingHeader, Progress, type Bill, type BookingRow } from "@/components/Booking";
+import { ACTIVE, BillView, BookingHeader, MapsButton, Progress, type Bill, type BookingRow } from "@/components/Booking";
 import { createClient } from "@/lib/supabase/client";
 import { one, useMe } from "@/lib/useMe";
 import { ALL_SERVICES, DISTRICTS, PAY_METHODS } from "@/lib/services";
@@ -254,6 +254,7 @@ function ProviderJob({ b, vat, onChange }: { b: Row; vat: boolean; onChange: () 
       <Progress status={b.status} kind={b.kind} />
 
       {b.address && <p className="mt-4 text-[15px]"><span className="text-muted">Address: </span>{b.address}</p>}
+      {ACTIVE.includes(b.status) && <MapsButton b={b} label="Directions in Google Maps" />}
       {b.note && <p className="mt-2 text-[15px]"><span className="text-muted">Note: </span>{b.note}</p>}
       {b.kind !== "room" && b.status !== "Completed" && (
         <p className="mt-2 text-[15px] text-muted">Customer will pay by {b.pay_method}.</p>

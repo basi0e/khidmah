@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Panel, inputCls, primaryBtn } from "@/components/ui";
-import { BillView, BookingHeader, Progress, type Bill, type BookingRow } from "@/components/Booking";
+import { BillView, BookingHeader, MapsButton, Progress, type Bill, type BookingRow } from "@/components/Booking";
 import { one, useMe } from "@/lib/useMe";
 
 type Detail = BookingRow & {
@@ -163,6 +163,7 @@ export default function BookingDetailPage() {
                     <BookingHeader b={b} who={other} />
                     <Progress status={b.status} kind={b.kind} />
                     {b.address && <p className="mt-4 text-[15px]"><span className="text-muted">Address: </span>{b.address}</p>}
+                    <MapsButton b={b} />
                     {b.note && <p className="mt-2 text-[15px]"><span className="text-muted">Note: </span>{b.note}</p>}
                     {one(b.bill) && <BillView bill={one(b.bill)!} />}
                   </div>

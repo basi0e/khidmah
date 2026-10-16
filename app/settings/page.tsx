@@ -8,6 +8,7 @@ import { Chip, Panel, inputCls, labelCls, primaryBtn, ghostBtn } from "@/compone
 import { createClient } from "@/lib/supabase/client";
 import { useMe, type Me } from "@/lib/useMe";
 import { DISTRICTS, REQUIRED_DOCS } from "@/lib/services";
+import { LocationPicker, type LatLng } from "@/components/LocationPicker";
 
 export default function SettingsPage() {
   const { supabase, me } = useMe();
@@ -135,7 +136,7 @@ function PasswordSection() {
   );
 }
 
-type Address = { id: string; label: string; district: string; detail: string };
+type Address = { id: string; label: string; district: string; detail: string; lat?: number | null; lng?: number | null };
 
 function AddressesSection({ me }: { me: Me }) {
   const [supabase] = useState(() => createClient());
@@ -143,10 +144,14 @@ function AddressesSection({ me }: { me: Me }) {
   const [label, setLabel] = useState("Home");
   const [district, setDistrict] = useState(DISTRICTS[me.city]?.[0] ?? "");
   const [detail, setDetail] = useState("");
+  const [pin, setPin] = useState<LatLng | null>(null);
   const [msg, setMsg] = useState("");
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("addresses").select("id, label, district, detail").eq("user_id", me.id).order("created_at");
+    const withLoc = await supabase.from("addresses").select("id, label, district, detail, lat, lng").eq("user_id", me.id).order("created_at");
+    const data = withLoc.error
+      ? (await supabase.from("addresses").select("id, label, district, detail").eq("user_id", me.id).order("created_at")).data
+      : withLoc.data;
     setList((data as Address[]) ?? []);
   }, [supabase, me.id]);
 
@@ -154,9 +159,12 @@ function AddressesSection({ me }: { me: Me }) {
 
   async function add() {
     setMsg("");
-    const { error } = await supabase.from("addresses").insert({ user_id: me.id, label: label.trim() || "Home", district, detail: detail.trim() });
+    const row: Record<string, unknown> = { user_id: me.id, label: label.trim() || "Home", district, detail: detail.trim() };
+    let { error } = await supabase.from("addresses").insert(pin ? { ...row, lat: pin.lat, lng: pin.lng } : row);
+    if (error && pin && /lat|lng|column/i.test(error.message)) ({ error } = await supabase.from("addresses").insert(row));
     if (error) return setMsg(error.message);
     setDetail("");
+    setPin(null);
     load();
   }
 
@@ -173,7 +181,7 @@ function AddressesSection({ me }: { me: Me }) {
         {list?.length === 0 && <li className="text-muted">No saved addresses yet.</li>}
         {list?.map((a) => (
           <li key={a.id} className="flex items-start justify-between gap-3 rounded-xl bg-mist p-3">
-            <span><span className="font-semibold">{a.label}</span><br /><span className="text-[15px] text-muted">{a.district}, {a.detail}</span></span>
+            <span><span className="font-semibold">{a.label}</span><br /><span className="text-[15px] text-muted">{a.district}, {a.detail}{a.lat != null ? ", pin saved" : ""}</span></span>
             <button className="text-sm font-semibold text-[#b42318] underline" onClick={() => remove(a.id)}>Remove</button>
           </li>
         ))}
@@ -190,7 +198,9 @@ function AddressesSection({ me }: { me: Me }) {
           </select>
         </div>
       </div>
-      <label className={`${labelCls} mt-3`} htmlFor="adetail">Building, street, apartment</label>
+      <p className={`${labelCls} mt-4`}>Pin on the map</p>
+      <LocationPicker value={pin} onChange={setPin} city={me.city} />
+      <label className={`${labelCls} mt-4`} htmlFor="adetail">Building, floor, apartment</label>
       <input id="adetail" className={inputCls} maxLength={200} value={detail} onChange={(e) => setDetail(e.target.value)} />
       <button className={`${primaryBtn} mt-4`} disabled={detail.trim().length < 3} onClick={add}>Add address</button>
       <Status msg={msg} />
