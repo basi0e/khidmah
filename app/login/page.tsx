@@ -19,6 +19,8 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>("loading");
   const [next, setNext] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
   const [city, setCity] = useState("Riyadh");
   const [role, setRole] = useState("customer");
@@ -77,13 +79,44 @@ export default function LoginPage() {
     if (step === "done" && next) router.push(next);
   }, [step, next, router]);
 
-  async function sendLink() {
+  async function submitAuth() {
     setBusy(true);
     setMessage("");
-    const back = `${window.location.origin}/login${next ? `?next=${encodeURIComponent(next)}` : ""}`;
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: back } });
+    if (mode === "login") {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      setBusy(false);
+      if (error) {
+        return setMessage(
+          error.message === "Invalid login credentials"
+            ? "Wrong email or password. New here? Choose Create account."
+            : error.message
+        );
+      }
+      return; // the login listener loads the profile
+    }
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    });
     setBusy(false);
     if (error) return setMessage(error.message);
+    if (!data.session) {
+      // Email confirmation is switched on in Supabase
+      setStep("sent");
+    }
+  }
+
+  async function forgotPassword() {
+    if (!email.trim()) return setMessage("Enter your email first, then click Forgot password.");
+    setBusy(true);
+    setMessage("");
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
+    if (error) return setMessage(error.message);
+    setMessage("");
     setStep("sent");
   }
 
@@ -138,6 +171,7 @@ export default function LoginPage() {
   async function signOut() {
     await supabase.auth.signOut();
     setEmail("");
+    setPassword("");
     setName("");
     setMessage("");
     setStep("email");
@@ -146,6 +180,8 @@ export default function LoginPage() {
   function toggle(list: string[], value: string, set: (v: string[]) => void) {
     set(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
   }
+
+  const canSubmit = /\S+@\S+\.\S+/.test(email.trim()) && password.length >= (mode === "signup" ? 8 : 1);
 
   const offerable = ALL_SERVICES.filter((s) =>
     ptype === "Landlord / room owner" ? s.slug === "rooms" : s.slug !== "rooms"
@@ -162,15 +198,34 @@ export default function LoginPage() {
 
             {step === "email" && (
               <>
-                <h1 className="font-display text-3xl font-bold">Log in or sign up</h1>
-                <p className="mt-2 text-muted">We&apos;ll email you a link. No password needed.</p>
-                <label className={`${labelCls} mt-6`} htmlFor="email">Email</label>
-                <input id="email" className={inputCls} type="email" placeholder="you@example.com"
-                  value={email} onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && email && sendLink()} />
-                <button className={`${primaryBtn} mt-5 w-full`} disabled={busy || !email} onClick={sendLink}>
-                  {busy ? "Sending…" : "Send login link"}
+                <div className="flex gap-2" role="tablist">
+                  {(["login", "signup"] as const).map((m) => (
+                    <button key={m} role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setMessage(""); }}
+                      className={`rounded-full px-5 py-2 font-semibold ${mode === m ? "bg-ink text-white" : "bg-mist text-ink"}`}>
+                      {m === "login" ? "Log in" : "Create account"}
+                    </button>
+                  ))}
+                </div>
+                <h1 className="mt-6 font-display text-3xl font-bold">
+                  {mode === "login" ? "Welcome back" : "Join Khidmah"}
+                </h1>
+                <label className={`${labelCls} mt-5`} htmlFor="email">Email</label>
+                <input id="email" className={inputCls} type="email" autoComplete="email" placeholder="you@example.com"
+                  value={email} onChange={(e) => setEmail(e.target.value)} />
+                <label className={`${labelCls} mt-4`} htmlFor="password">Password</label>
+                <input id="password" className={inputCls} type="password"
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  placeholder={mode === "signup" ? "At least 8 characters" : ""}
+                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && canSubmit && submitAuth()} />
+                <button className={`${primaryBtn} mt-5 w-full`} disabled={busy || !canSubmit} onClick={submitAuth}>
+                  {busy ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
                 </button>
+                {mode === "login" && (
+                  <button className="mt-4 text-sm text-muted underline hover:text-ink" onClick={forgotPassword}>
+                    Forgot password?
+                  </button>
+                )}
               </>
             )}
 
@@ -178,11 +233,11 @@ export default function LoginPage() {
               <>
                 <h1 className="font-display text-3xl font-bold">Check your email</h1>
                 <p className="mt-3 text-ink">
-                  We sent a login link to <strong>{email}</strong>. Open it in this same browser.
+                  We sent an email to <strong>{email}</strong>. Open the link in it to continue.
                 </p>
                 <p className="mt-2 text-muted">Not there after a minute? Check your spam folder.</p>
                 <button className="mt-5 text-muted underline hover:text-ink" onClick={() => setStep("email")}>
-                  Use a different email
+                  Back to log in
                 </button>
               </>
             )}
