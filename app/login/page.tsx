@@ -1,13 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { SiteHeader } from "@/components/SiteHeader";
+import { Chip, Panel, inputCls, labelCls, primaryBtn } from "@/components/ui";
+import { ALL_SERVICES, DISTRICTS, PROVIDER_TYPES } from "@/lib/services";
 
-type Step = "loading" | "email" | "sent" | "profile" | "done";
+type Step = "loading" | "email" | "sent" | "profile" | "provider" | "done";
+
+function safeNext(raw: string | null) {
+  return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
+}
 
 export default function LoginPage() {
+  const router = useRouter();
   const [supabase] = useState(() => createClient());
   const [step, setStep] = useState<Step>("loading");
+  const [next, setNext] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [city, setCity] = useState("Riyadh");
@@ -15,25 +25,46 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // provider details
+  const [ptype, setPtype] = useState(PROVIDER_TYPES[0]);
+  const [services, setServices] = useState<string[]>([]);
+  const [price, setPrice] = useState("100");
+  const [experience, setExperience] = useState("");
+  const [districts, setDistricts] = useState<string[]>([]);
+  const [phone, setPhone] = useState("");
+  const [about, setAbout] = useState("");
+
   useEffect(() => {
-    async function loadProfile(userId: string) {
+    setNext(safeNext(new URLSearchParams(window.location.search).get("next")));
+
+    async function load(userId: string) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("name")
+        .select("name, role, city")
         .eq("id", userId)
         .maybeSingle();
-      if (profile) {
-        setName(profile.name);
-        setStep("done");
-      } else {
-        setStep("profile");
+      if (!profile) return setStep("profile");
+      setName(profile.name);
+      setRole(profile.role);
+      setCity(profile.city);
+      if (profile.role === "provider") {
+        const { data: pp } = await supabase
+          .from("provider_profiles")
+          .select("user_id")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (!pp) {
+          setDistricts(DISTRICTS[profile.city] ?? []);
+          return setStep("provider");
+        }
       }
+      setStep("done");
     }
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        const userId = session.user.id;
-        setTimeout(() => loadProfile(userId), 0);
+        const id = session.user.id;
+        setTimeout(() => load(id), 0);
       } else {
         setStep((s) => (s === "loading" ? "email" : s));
       }
@@ -41,13 +72,16 @@ export default function LoginPage() {
     return () => data.subscription.unsubscribe();
   }, [supabase]);
 
+  // Send people back to what they were doing (e.g. a booking) once they're ready
+  useEffect(() => {
+    if (step === "done" && next) router.push(next);
+  }, [step, next, router]);
+
   async function sendLink() {
     setBusy(true);
     setMessage("");
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
-    });
+    const back = `${window.location.origin}/login${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: back } });
     setBusy(false);
     if (error) return setMessage(error.message);
     setStep("sent");
@@ -60,11 +94,42 @@ export default function LoginPage() {
     if (!data.user) {
       setBusy(false);
       setStep("email");
-      return setMessage("Please log in again.");
+      return setMessage("Your login expired. Enter your email to get a new link.");
     }
     const { error } = await supabase
       .from("profiles")
-      .insert({ id: data.user.id, name, city, role });
+      .insert({ id: data.user.id, name: name.trim(), city, role });
+    setBusy(false);
+    if (error) return setMessage(error.message);
+    if (role === "provider") {
+      setDistricts(DISTRICTS[city] ?? []);
+      setStep("provider");
+    } else {
+      setStep("done");
+    }
+  }
+
+  async function saveProvider() {
+    setBusy(true);
+    setMessage("");
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      setBusy(false);
+      setStep("email");
+      return setMessage("Your login expired. Enter your email to get a new link.");
+    }
+    const { error } = await supabase.from("provider_profiles").insert({
+      user_id: data.user.id,
+      provider_type: ptype,
+      services,
+      price_from: Number(price),
+      experience: experience || null,
+      districts,
+      contact_phone: phone || null,
+      about: about || null,
+      vat_registered: ptype === "Company",
+      status: "Pending verification",
+    });
     setBusy(false);
     if (error) return setMessage(error.message);
     setStep("done");
@@ -78,69 +143,152 @@ export default function LoginPage() {
     setStep("email");
   }
 
-  const input = "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-black";
-  const button = "w-full rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white disabled:opacity-50";
+  function toggle(list: string[], value: string, set: (v: string[]) => void) {
+    set(list.includes(value) ? list.filter((x) => x !== value) : [...list, value]);
+  }
+
+  const offerable = ALL_SERVICES.filter((s) =>
+    ptype === "Landlord / room owner" ? s.slug === "rooms" : s.slug !== "rooms"
+  );
+  const providerReady = services.length > 0 && Number(price) >= 10 && districts.length > 0;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow">
-        <h1 className="text-2xl font-bold text-emerald-700">Khidmah</h1>
+    <>
+      <SiteHeader />
+      <main className="flex-1 bg-mist px-4 py-14 sm:px-6">
+        <div className={`mx-auto ${step === "provider" ? "max-w-2xl" : "max-w-md"}`}>
+          <Panel>
+            {step === "loading" && <p className="text-muted">Checking your login…</p>}
 
-        {step === "loading" && <p className="text-gray-600">Loading...</p>}
+            {step === "email" && (
+              <>
+                <h1 className="font-display text-3xl font-bold">Log in or sign up</h1>
+                <p className="mt-2 text-muted">We&apos;ll email you a link. No password needed.</p>
+                <label className={`${labelCls} mt-6`} htmlFor="email">Email</label>
+                <input id="email" className={inputCls} type="email" placeholder="you@example.com"
+                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && email && sendLink()} />
+                <button className={`${primaryBtn} mt-5 w-full`} disabled={busy || !email} onClick={sendLink}>
+                  {busy ? "Sending…" : "Send login link"}
+                </button>
+              </>
+            )}
 
-        {step === "email" && (
-          <>
-            <p className="text-gray-600">Enter your email to log in or sign up.</p>
-            <input className={input} type="email" placeholder="you@example.com"
-              value={email} onChange={(e) => setEmail(e.target.value)} />
-            <button className={button} disabled={busy || !email} onClick={sendLink}>
-              {busy ? "Sending..." : "Send login link"}
-            </button>
-          </>
-        )}
+            {step === "sent" && (
+              <>
+                <h1 className="font-display text-3xl font-bold">Check your email</h1>
+                <p className="mt-3 text-ink">
+                  We sent a login link to <strong>{email}</strong>. Open it in this same browser.
+                </p>
+                <p className="mt-2 text-muted">Not there after a minute? Check your spam folder.</p>
+                <button className="mt-5 text-muted underline hover:text-ink" onClick={() => setStep("email")}>
+                  Use a different email
+                </button>
+              </>
+            )}
 
-        {step === "sent" && (
-          <>
-            <p className="text-gray-800">
-              We sent a login link to <strong>{email}</strong>.
-            </p>
-            <p className="text-sm text-gray-600">
-              Open it in this same browser. Check your spam folder if you don&apos;t see it.
-            </p>
-            <button className="text-sm text-gray-500 underline" onClick={() => setStep("email")}>
-              Use a different email
-            </button>
-          </>
-        )}
+            {step === "profile" && (
+              <>
+                <h1 className="font-display text-3xl font-bold">Welcome to Khidmah</h1>
+                <p className="mt-2 text-muted">A few details to set up your account.</p>
+                <label className={`${labelCls} mt-6`} htmlFor="name">Your name</label>
+                <input id="name" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
+                <p className={`${labelCls} mt-5`}>City</p>
+                <div className="flex gap-2" role="radiogroup" aria-label="City">
+                  {Object.keys(DISTRICTS).map((c) => (
+                    <Chip key={c} selected={city === c} onClick={() => setCity(c)}>{c}</Chip>
+                  ))}
+                </div>
+                <p className={`${labelCls} mt-5`}>I want to</p>
+                <div className="grid gap-2" role="radiogroup" aria-label="Account type">
+                  <Chip selected={role === "customer"} onClick={() => setRole("customer")}>Book services</Chip>
+                  <Chip selected={role === "provider"} onClick={() => setRole("provider")}>Offer my services</Chip>
+                </div>
+                <button className={`${primaryBtn} mt-6 w-full`} disabled={busy || name.trim().length < 2} onClick={saveProfile}>
+                  {busy ? "Saving…" : "Continue"}
+                </button>
+              </>
+            )}
 
-        {step === "profile" && (
-          <>
-            <p className="text-gray-600">Welcome! Tell us a bit about you.</p>
-            <input className={input} placeholder="Your name"
-              value={name} onChange={(e) => setName(e.target.value)} />
-            <select className={input} value={city} onChange={(e) => setCity(e.target.value)}>
-              <option>Riyadh</option>
-              <option>Dammam</option>
-            </select>
-            <select className={input} value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="customer">I need services</option>
-              <option value="provider">I provide services</option>
-            </select>
-            <button className={button} disabled={busy || !name} onClick={saveProfile}>
-              {busy ? "Saving..." : "Continue"}
-            </button>
-          </>
-        )}
+            {step === "provider" && (
+              <>
+                <h1 className="font-display text-3xl font-bold">Your provider profile</h1>
+                <p className="mt-2 text-muted">Customers see this when choosing who to book.</p>
 
-        {step === "done" && (
-          <>
-            <p className="text-lg text-gray-800">You are logged in, {name}.</p>
-            <button className={button} onClick={signOut}>Log out</button>
-          </>
-        )}
+                <p className={`${labelCls} mt-6`}>I am</p>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Provider type">
+                  {PROVIDER_TYPES.map((t) => (
+                    <Chip key={t} selected={ptype === t} onClick={() => { setPtype(t); setServices([]); }}>{t}</Chip>
+                  ))}
+                </div>
 
-        {message && <p className="text-sm text-red-600">{message}</p>}
-      </div>
-    </main>
+                <p className={`${labelCls} mt-6`}>Services you offer</p>
+                <div className="flex flex-wrap gap-2">
+                  {offerable.map((s) => (
+                    <Chip key={s.slug} role="checkbox" selected={services.includes(s.slug)}
+                      onClick={() => toggle(services, s.slug, setServices)}>{s.name}</Chip>
+                  ))}
+                </div>
+
+                <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label className={labelCls} htmlFor="price">
+                      {ptype === "Landlord / room owner" ? "Monthly rent from (SAR)" : "Starting price (SAR)"}
+                    </label>
+                    <input id="price" className={inputCls} type="number" min={10} value={price}
+                      onChange={(e) => setPrice(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className={labelCls} htmlFor="exp">Experience</label>
+                    <input id="exp" className={inputCls} placeholder="e.g. 8 years" value={experience}
+                      onChange={(e) => setExperience(e.target.value)} />
+                  </div>
+                </div>
+
+                <p className={`${labelCls} mt-6`}>Districts you cover in {city}</p>
+                <div className="flex flex-wrap gap-2">
+                  {(DISTRICTS[city] ?? []).map((d) => (
+                    <Chip key={d} role="checkbox" selected={districts.includes(d)}
+                      onClick={() => toggle(districts, d, setDistricts)}>{d}</Chip>
+                  ))}
+                </div>
+
+                <label className={`${labelCls} mt-6`} htmlFor="phone">Contact phone (shared after a customer books)</label>
+                <input id="phone" className={inputCls} inputMode="tel" placeholder="05XXXXXXXX" value={phone}
+                  onChange={(e) => setPhone(e.target.value)} />
+
+                <label className={`${labelCls} mt-5`} htmlFor="about">About you (optional)</label>
+                <textarea id="about" className={inputCls} rows={3} maxLength={600} value={about}
+                  onChange={(e) => setAbout(e.target.value)} />
+
+                <button className={`${primaryBtn} mt-6 w-full`} disabled={busy || !providerReady} onClick={saveProvider}>
+                  {busy ? "Saving…" : "Create provider profile"}
+                </button>
+                <p className="mt-3 text-sm text-muted">
+                  New profiles show as pending until we verify your documents. You can still receive requests meanwhile.
+                </p>
+              </>
+            )}
+
+            {step === "done" && (
+              <>
+                <h1 className="font-display text-3xl font-bold">You&apos;re logged in, {name}.</h1>
+                <p className="mt-2 text-muted">
+                  {role === "provider" ? "Booking requests will show up in your account." : "Ready to book a service."}
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <a href="/#services" className={primaryBtn}>Browse services</a>
+                  <button className="rounded-full border-2 border-ink px-6 py-3 font-semibold hover:bg-mist" onClick={signOut}>
+                    Log out
+                  </button>
+                </div>
+              </>
+            )}
+
+            {message && <p className="mt-4 text-sm font-medium text-red-700">{message}</p>}
+          </Panel>
+        </div>
+      </main>
+    </>
   );
 }

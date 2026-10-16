@@ -31,7 +31,7 @@ const paths: Record<string, React.ReactNode> = {
       <path d="M13.2 7.8 4.6 16.4a2 2 0 0 0 2.9 2.9l8.6-8.6" />
     </>
   ),
-  appliances: (
+  appliance: (
     <>
       <rect x="4" y="2.5" width="16" height="19" rx="2" />
       <circle cx="12" cy="13.5" r="4.5" />
