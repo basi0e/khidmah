@@ -76,8 +76,10 @@ export default function LoginPage() {
 
   // Send people back to what they were doing (e.g. a booking) once they're ready
   useEffect(() => {
-    if (step === "done" && next) router.push(next);
-  }, [step, next, router]);
+    if (step !== "done") return;
+    const home = role === "provider" ? "/provider" : role === "admin" ? "/admin" : "/";
+    router.replace(next ?? home);
+  }, [step, next, role, router]);
 
   async function submitAuth() {
     setBusy(true);
@@ -174,15 +176,6 @@ export default function LoginPage() {
     setBusy(false);
     if (error) return setMessage(error.message);
     setStep("done");
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    setEmail("");
-    setPassword("");
-    setName("");
-    setMessage("");
-    setStep("email");
   }
 
   function toggle(list: string[], value: string, set: (v: string[]) => void) {
@@ -327,22 +320,7 @@ export default function LoginPage() {
               </>
             )}
 
-            {step === "done" && (
-              <>
-                <h1 className="text-2xl font-bold sm:text-3xl">You&apos;re logged in, {name}.</h1>
-                <p className="mt-2 text-muted">
-                  {role === "provider" ? "Booking requests will show up in your account." : role === "admin" ? "You have admin access." : "Ready to book a service."}
-                </p>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <a href={role === "provider" ? "/provider" : role === "admin" ? "/admin" : "/account"} className={primaryBtn}>
-                    {role === "provider" ? "Go to your jobs" : role === "admin" ? "Open admin" : "My bookings"}
-                  </a>
-                  <button className="rounded-full border border-line-strong px-6 py-3 font-semibold hover:bg-mist" onClick={signOut}>
-                    Log out
-                  </button>
-                </div>
-              </>
-            )}
+            {step === "done" && <p className="text-muted">Signing you in…</p>}
 
             {message && <p className="mt-4 text-sm font-medium text-[#b42318]">{message}</p>}
           </Panel>
