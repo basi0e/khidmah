@@ -100,7 +100,13 @@ export default function LoginPage() {
       options: { emailRedirectTo: `${window.location.origin}/login` },
     });
     setBusy(false);
-    if (error) return setMessage(error.message);
+    if (error) {
+      if (/already registered/i.test(error.message)) {
+        setMode("login");
+        return setMessage("You already have an account with this email. Log in with your password, or tap Forgot password.");
+      }
+      return setMessage(error.message);
+    }
     if (!data.session) {
       // Email confirmation is switched on in Supabase
       setStep("sent");
