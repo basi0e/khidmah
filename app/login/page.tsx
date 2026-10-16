@@ -89,6 +89,8 @@ export default function LoginPage() {
         return setMessage(
           error.message === "Invalid login credentials"
             ? "Wrong email or password. New here? Choose Create account."
+            : /banned/i.test(error.message)
+            ? "This account has been disabled. Contact aykhidmah@gmail.com if you think this is a mistake."
             : error.message
         );
       }

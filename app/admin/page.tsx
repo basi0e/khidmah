@@ -161,7 +161,7 @@ export default function AdminPage() {
               <div className="mt-5">
                 {tab === "providers" && <ProvidersTab rows={providers} onChange={load} />}
                 {tab === "bookings" && <BookingsTab rows={bookings} onChange={load} />}
-                {tab === "users" && <UsersTab rows={users} />}
+                {tab === "users" && <UsersTab rows={users} meId={me.id} onChange={load} />}
                 {tab === "support" && <SupportTab rows={tickets} adminId={me.id} onChange={load} />}
               </div>
               {error && <p className="mt-4 font-medium text-red-700">{error}</p>}
@@ -393,48 +393,147 @@ function BookingsTab({ rows, onChange }: { rows: AdminBooking[] | null; onChange
 
 /* ---------- Users ---------- */
 
-function UsersTab({ rows }: { rows: UserRow[] | null }) {
+type Account = {
+  id: string;
+  email: string;
+  created_at: string;
+  last_sign_in_at: string | null;
+  disabled: boolean;
+  name: string | null;
+  role: string | null;
+  city: string | null;
+};
+
+function UsersTab({ rows, meId, onChange }: { rows: UserRow[] | null; meId: string; onChange: () => void }) {
+  const [supabase] = useState(() => createClient());
+  const [accounts, setAccounts] = useState<Account[] | null>(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
   const [role, setRole] = useState("all");
   const [q, setQ] = useState("");
-  if (!rows) return <p className="text-muted">Loading users…</p>;
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState("");
+
+  const load = useCallback(async () => {
+    const { data, error } = await supabase.rpc("admin_list_accounts");
+    if (error) {
+      // The account tools haven't been added to the database yet: fall back to completed profiles
+      setNeedsSetup(true);
+      setAccounts(
+        (rows ?? []).map((u) => ({
+          id: u.id, email: "", created_at: u.created_at, last_sign_in_at: null, disabled: false,
+          name: u.name, role: u.role, city: u.city,
+        }))
+      );
+      return;
+    }
+    setNeedsSetup(false);
+    setAccounts((data as Account[]) ?? []);
+  }, [supabase, rows]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function toggleDisabled(a: Account) {
+    const verb = a.disabled ? "Enable" : "Disable";
+    if (!window.confirm(`${verb} ${a.email || a.name}?${a.disabled ? "" : " They won't be able to log in."}`)) return;
+    setBusy(a.id);
+    setMsg("");
+    const { error } = await supabase.rpc("admin_set_disabled", { p_user: a.id, p_disabled: !a.disabled });
+    setBusy(null);
+    if (error) return setMsg(error.message);
+    load();
+    onChange();
+  }
+
+  async function remove(a: Account) {
+    const label = a.email || a.name || "this account";
+    const typed = window.prompt(
+      `Delete ${label} permanently?\n\nTheir open bookings will be cancelled and they will need to sign up again. Past bookings stay in the records.\n\nType DELETE to confirm.`
+    );
+    if (typed !== "DELETE") return;
+    setBusy(a.id);
+    setMsg("");
+    const { error } = await supabase.rpc("admin_delete_account", { p_user: a.id });
+    setBusy(null);
+    if (error) return setMsg(error.message);
+    load();
+    onChange();
+  }
+
+  if (!accounts) return <p className="text-muted">Loading accounts…</p>;
   const term = q.trim().toLowerCase();
-  const shown = rows.filter((u) => (role === "all" || u.role === role) && (!term || u.name.toLowerCase().includes(term)));
+  const shown = accounts.filter((u) =>
+    (role === "all" || (role === "incomplete" ? !u.role : role === "disabled" ? u.disabled : u.role === role)) &&
+    (!term || (u.name ?? "").toLowerCase().includes(term) || u.email.toLowerCase().includes(term))
+  );
+  const incomplete = accounts.filter((u) => !u.role).length;
+
   return (
     <>
+      {needsSetup && (
+        <p className="mb-4 rounded-2xl bg-sun/30 px-4 py-3 text-[15px]">
+          Showing completed profiles only. To see every account and disable or delete them, run the file{" "}
+          <code className="rounded bg-paper px-1">supabase/003_admin_accounts.sql</code> in the Supabase SQL Editor.
+        </p>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input className={`${inputCls} sm:max-w-xs`} placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Role">
-          {[["all", "All"], ["customer", "Customers"], ["provider", "Providers"], ["admin", "Admins"]].map(([v, l]) => (
+        <input className={`${inputCls} sm:max-w-xs`} placeholder="Search name or email" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Filter accounts">
+          {([
+            ["all", "All"], ["customer", "Customers"], ["provider", "Providers"], ["admin", "Admins"],
+            ...(needsSetup ? [] : [["incomplete", `Unfinished (${incomplete})`], ["disabled", "Disabled"]]),
+          ] as [string, string][]).map(([v, l]) => (
             <Chip key={v} selected={role === v} onClick={() => setRole(v)}>{l}</Chip>
           ))}
         </div>
       </div>
       {shown.length === 0 ? (
-        <div className="mt-4"><Empty text="No users match." /></div>
+        <div className="mt-4"><Empty text="No accounts match." /></div>
       ) : (
         <div className="mt-4 overflow-x-auto rounded-3xl bg-paper">
-          <table className="w-full min-w-[520px] text-left text-[15px]">
+          <table className="w-full min-w-[760px] text-left text-[15px]">
             <thead className="border-b border-line text-sm text-muted">
               <tr>
-                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Account</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">City</th>
                 <th className="px-4 py-3 font-medium">Joined</th>
+                <th className="px-4 py-3 font-medium">Last login</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {shown.map((u) => (
-                <tr key={u.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3 font-medium">{u.name}</td>
-                  <td className="px-4 py-3 capitalize">{u.role}</td>
-                  <td className="px-4 py-3">{u.city}</td>
+                <tr key={u.id} className={`border-b border-line last:border-0 align-top ${u.disabled ? "bg-red-50" : ""}`}>
+                  <td className="px-4 py-3">
+                    <span className="font-medium">{u.name ?? <span className="text-muted">No name yet</span>}</span>
+                    {u.email && <><br /><span className="text-sm text-muted">{u.email}</span></>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {u.role ? <span className="capitalize">{u.role}</span> : <span className="rounded-full bg-sun/30 px-2.5 py-0.5 text-sm">Unfinished sign-up</span>}
+                    {u.disabled && <><br /><span className="text-sm font-semibold text-red-700">Disabled</span></>}
+                  </td>
+                  <td className="px-4 py-3">{u.city ?? "–"}</td>
                   <td className="px-4 py-3">{when(u.created_at)}</td>
+                  <td className="px-4 py-3">{u.last_sign_in_at ? when(u.last_sign_in_at) : "–"}</td>
+                  <td className="px-4 py-3 text-right">
+                    {!needsSetup && u.id !== meId && u.role !== "admin" && (
+                      <div className="flex justify-end gap-3 whitespace-nowrap">
+                        <button className="text-sm font-semibold underline" disabled={busy === u.id} onClick={() => toggleDisabled(u)}>
+                          {u.disabled ? "Enable" : "Disable"}
+                        </button>
+                        <button className="text-sm font-semibold text-red-700 underline" disabled={busy === u.id} onClick={() => remove(u)}>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+      {msg && <p className="mt-3 text-sm font-medium text-red-700">{msg}</p>}
     </>
   );
 }
