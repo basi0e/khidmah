@@ -7,7 +7,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Chip, Panel, Segmented, inputCls, labelCls, primaryBtn } from "@/components/ui";
 import { ALL_SERVICES, DISTRICTS, PROVIDER_TYPES } from "@/lib/services";
 
-type Step = "loading" | "email" | "sent" | "profile" | "provider" | "done";
+type Step = "loading" | "email" | "sent" | "profile" | "provider" | "switch" | "done";
 
 function safeNext(raw: string | null) {
   return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [supabase] = useState(() => createClient());
   const [step, setStep] = useState<Step>("loading");
   const [next, setNext] = useState<string | null>(null);
+  const [arrivedLoggedIn, setArrivedLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -37,7 +38,13 @@ export default function LoginPage() {
   const [about, setAbout] = useState("");
 
   useEffect(() => {
-    setNext(safeNext(new URLSearchParams(window.location.search).get("next")));
+    const params = new URLSearchParams(window.location.search);
+    setNext(safeNext(params.get("next")));
+    const asProvider = params.get("as") === "provider";
+    if (asProvider) {
+      setMode("signup");
+      setRole("provider");
+    }
 
     async function load(userId: string) {
       const { data: profile } = await supabase
@@ -46,6 +53,11 @@ export default function LoginPage() {
         .eq("id", userId)
         .maybeSingle();
       if (!profile) return setStep("profile");
+      if (asProvider && profile.role !== "provider") {
+        setName(profile.name);
+        setRole(profile.role);
+        return setStep("switch");
+      }
       setName(profile.name);
       setRole(profile.role);
       setCity(profile.city);
@@ -63,7 +75,8 @@ export default function LoginPage() {
       setStep("done");
     }
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION" && session?.user) setArrivedLoggedIn(true);
       if (session?.user) {
         const id = session.user.id;
         setTimeout(() => load(id), 0);
@@ -77,9 +90,9 @@ export default function LoginPage() {
   // Send people back to what they were doing (e.g. a booking) once they're ready
   useEffect(() => {
     if (step !== "done") return;
-    const home = role === "provider" ? "/provider" : role === "admin" ? "/admin" : "/";
+    const home = role === "provider" ? "/provider" : role === "admin" ? "/admin" : arrivedLoggedIn ? "/account" : "/";
     router.replace(next ?? home);
-  }, [step, next, role, router]);
+  }, [step, next, role, router, arrivedLoggedIn]);
 
   async function submitAuth() {
     setBusy(true);
@@ -317,6 +330,32 @@ export default function LoginPage() {
                 <p className="mt-3 text-sm text-muted">
                   New profiles show as pending until we verify your documents. You can still receive requests meanwhile.
                 </p>
+              </>
+            )}
+
+            {step === "switch" && (
+              <>
+                <h1 className="text-2xl font-bold">Offer your services on Khidmah</h1>
+                <p className="mt-2 text-muted">
+                  You&apos;re logged in as {name}, a {role === "admin" ? "admin" : "customer"} account. Providers use a separate account,
+                  so your bookings and your jobs stay apart.
+                </p>
+                <div className="mt-6 grid gap-3">
+                  <button className={primaryBtn} onClick={async () => {
+                    await supabase.auth.signOut();
+                    setRole("provider");
+                    setMode("signup");
+                    setEmail("");
+                    setPassword("");
+                    setName("");
+                    setStep("email");
+                  }}>
+                    Log out and create a provider account
+                  </button>
+                  <a href="/" className="inline-flex min-h-12 items-center justify-center rounded-full border border-line-strong font-semibold hover:bg-soft">
+                    Stay logged in
+                  </a>
+                </div>
               </>
             )}
 

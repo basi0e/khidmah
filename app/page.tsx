@@ -113,7 +113,7 @@ export default function Home() {
                 Technicians, companies and room owners join for free. Choose your services, districts and hours,
                 and accept the jobs that suit you.
               </p>
-              <Link href="/login" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-sun px-6 font-semibold text-ink hover:bg-white">
+              <Link href="/login?as=provider" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-sun px-6 font-semibold text-ink hover:bg-white">
                 Join as a provider
               </Link>
             </div>

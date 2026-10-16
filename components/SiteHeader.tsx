@@ -39,12 +39,12 @@ export function SiteHeader() {
             </Link>
           )}
           {me && (
-            <Link href={homeFor(me.role)}
-              className="ml-1 hidden min-h-11 max-w-[12rem] items-center gap-2 truncate rounded-full border border-line-strong py-1 pl-1 pr-4 font-semibold text-ink hover:bg-soft md:inline-flex">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-palm-50 text-sm font-bold text-palm-deep">
+            <Link href={homeFor(me.role)} aria-label={`Your account, ${me.name}`}
+              className="ml-1 inline-flex min-h-11 max-w-[12rem] items-center gap-2 rounded-full border border-line-strong p-1 font-semibold text-ink hover:bg-soft md:pr-4">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-palm-50 text-[15px] font-bold text-palm-deep">
                 {me.name.slice(0, 1).toUpperCase()}
               </span>
-              <span className="truncate">{me.name}</span>
+              <span className="hidden truncate md:inline">{me.name}</span>
             </Link>
           )}
         </nav>

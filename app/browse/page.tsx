@@ -128,7 +128,7 @@ export default function BrowsePage() {
                   <Illustration name="step-pro" className="mx-auto h-32 w-48" />
                   <p className="mt-2 text-lg font-bold">No {isRooms ? "landlords" : "providers"} here yet</p>
                   <p className="mt-1 text-muted">We&apos;re signing up providers for {service.name} in {city}. Check back soon.</p>
-                  <Link href="/login" className={`${ghostBtn} mt-4`}>Offer this service on Khidmah</Link>
+                  <Link href="/login?as=provider" className={`${ghostBtn} mt-4`}>Offer this service on Khidmah</Link>
                 </li>
               )}
               {shown.map((p, i) => {
