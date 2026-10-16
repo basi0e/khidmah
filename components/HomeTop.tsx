@@ -35,6 +35,11 @@ export function HomeTop() {
 
   useEffect(() => { setHello(greeting()); }, []);
 
+  useEffect(() => {
+    if (me?.role === "provider") router.replace("/provider");
+    else if (me?.role === "admin") router.replace("/admin");
+  }, [me, router]);
+
   const matches = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return [];

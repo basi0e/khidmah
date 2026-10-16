@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-export function Logo({ light = false }: { light?: boolean }) {
+export function Logo({ light = false, href = "/" }: { light?: boolean; href?: string }) {
   return (
-    <Link href="/" className="flex items-center gap-2.5" aria-label="Khidmah home">
+    <Link href={href} className="flex items-center gap-2.5" aria-label="Khidmah home">
       <svg viewBox="0 0 32 32" className="h-8 w-8" aria-hidden="true">
         <path d="M16 2 30 16 16 30 2 16z" fill="#0e6b57" />
         <path d="M16 9l7 7-7 7-7-7z" fill="#f2b33d" />

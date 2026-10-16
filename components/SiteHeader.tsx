@@ -14,17 +14,18 @@ export function SiteHeader() {
   const { me } = useMe();
   const path = usePathname();
 
-  const links = [
-    ["/browse", "Services"],
-    ["/#how", "How it works"],
-    ...(me?.role === "provider" ? [] : [["/#providers", "For providers"]]),
-    ["/support", "Help"],
-  ];
+  const links =
+    me?.role === "provider"
+      ? [["/provider", "Jobs"], ["/messages", "Messages"], ["/settings", "Account"], ["/support", "Help"]]
+      : me?.role === "admin"
+      ? [["/admin", "Admin"], ["/browse", "Services"], ["/support", "Help"]]
+      : [["/browse", "Services"], ["/#how", "How it works"], ["/#providers", "For providers"], ["/support", "Help"]];
+  const logoHref = me?.role === "provider" ? "/provider" : me?.role === "admin" ? "/admin" : "/";
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-        <Logo />
+        <Logo href={logoHref} />
         <nav className="flex items-center gap-1 sm:gap-2" aria-label="Site">
           {links.map(([href, label]) => (
             <Link key={href} href={href}

@@ -18,12 +18,12 @@ const TABS: Record<string, Tab[]> = {
   provider: [
     { href: "/provider", label: "Jobs", icon: "briefcase", match: (p) => p.startsWith("/provider") },
     { href: "/messages", label: "Messages", icon: "chat", match: (p) => p.startsWith("/messages") || p.startsWith("/booking") },
-    { href: "/browse", label: "Explore", icon: "grid", match: (p) => p === "/" || p.startsWith("/browse") || p.startsWith("/pro") },
+    { href: "/browse", label: "Services", icon: "grid", match: (p) => p.startsWith("/browse") || p.startsWith("/pro") },
     { href: "/settings", label: "Account", icon: "user", match: (p) => p.startsWith("/settings") || p.startsWith("/support") },
   ],
   admin: [
     { href: "/admin", label: "Admin", icon: "shield", match: (p) => p.startsWith("/admin") },
-    { href: "/", label: "Site", icon: "home", match: (p) => p === "/" || p.startsWith("/browse") },
+    { href: "/browse", label: "Services", icon: "grid", match: (p) => p.startsWith("/browse") || p.startsWith("/pro") },
     { href: "/settings", label: "Account", icon: "user", match: (p) => p.startsWith("/settings") },
   ],
 };
