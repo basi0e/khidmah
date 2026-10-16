@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Icon } from "@/components/Icon";
+import { Illustration } from "@/components/Illustration";
 import { Chip, Panel, inputCls, labelCls, primaryBtn, ghostBtn } from "@/components/ui";
 import { ALL_SERVICES, DISTRICTS, PAY_METHODS, SLOTS, findService, type Service } from "@/lib/services";
 
@@ -216,9 +217,7 @@ export default function RequestPage() {
           {ready && service && !bookedRef && (
             <>
               <div className="flex items-center gap-4">
-                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-paper text-palm">
-                  <Icon name={service.slug} className="h-8 w-8" />
-                </span>
+                <Illustration name={service.slug} className="h-24 w-36 shrink-0 rounded-2xl bg-paper" />
                 <div>
                   <h1 className="font-display text-3xl font-bold sm:text-4xl">Book {service.phrase}</h1>
                   <div className="mt-2 flex gap-2" role="radiogroup" aria-label="City">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
-import { Icon } from "@/components/Icon";
+import { Illustration } from "@/components/Illustration";
 import { Stars } from "@/components/Stars";
 import { Chip, primaryBtn, ghostBtn } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
@@ -68,9 +68,9 @@ export default function BrowsePage() {
               <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {ALL_SERVICES.map((s) => (
                   <button key={s.slug} onClick={() => setService(s)}
-                    className="flex items-center gap-4 rounded-2xl bg-paper p-5 text-left hover:ring-2 hover:ring-ink">
-                    <span className="text-palm"><Icon name={s.slug} /></span>
-                    <span>
+                    className="flex flex-col rounded-2xl bg-paper p-5 text-left hover:ring-2 hover:ring-ink">
+                    <Illustration name={s.slug} className="h-32 w-full" />
+                    <span className="mt-2">
                       <span className="block font-display text-lg font-bold">{s.name}</span>
                       <span className="block text-sm text-muted">{s.jobs}</span>
                     </span>
@@ -82,14 +82,12 @@ export default function BrowsePage() {
 
           {service && (
             <>
-              <div className="flex flex-wrap items-center gap-4">
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-paper text-palm">
-                  <Icon name={service.slug} className="h-8 w-8" />
-                </span>
+              <div className="flex flex-col-reverse gap-4 rounded-3xl bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
                 <div>
                   <h1 className="font-display text-4xl font-bold tracking-tight">{service.name} in {city}</h1>
-                  <p className="text-muted">{service.jobs}</p>
+                  <p className="mt-1 text-muted">{service.jobs}</p>
                 </div>
+                <Illustration name={service.slug} className="h-32 w-48 shrink-0 sm:h-40 sm:w-60" />
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -112,7 +110,8 @@ export default function BrowsePage() {
                 {rows === null && <p className="text-muted">Finding providers…</p>}
                 {rows && shown.length === 0 && (
                   <div className="rounded-3xl bg-paper p-8 text-center">
-                    <p className="font-display text-xl font-bold">No providers here yet</p>
+                    <Illustration name="step-pro" className="mx-auto h-36 w-56 opacity-80" />
+                    <p className="mt-2 font-display text-xl font-bold">No providers here yet</p>
                     <p className="mt-1 text-muted">We&apos;re signing up {service.name.toLowerCase()} providers in {city}. Check back soon.</p>
                     <Link href="/login" className={`${ghostBtn} mt-4 inline-block`}>Offer this service on Khidmah</Link>
                   </div>

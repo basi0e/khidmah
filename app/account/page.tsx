@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
+import { Illustration } from "@/components/Illustration";
 import { Panel, primaryBtn, inputCls } from "@/components/ui";
 import { ACTIVE, BillView, BookingHeader, Progress, type Bill, type BookingRow } from "@/components/Booking";
 import { one, useMe } from "@/lib/useMe";
@@ -85,7 +86,8 @@ export default function AccountPage() {
                 {rows === null && <p className="text-muted">Loading your bookings…</p>}
                 {rows && list.length === 0 && (
                   <div className="rounded-3xl bg-paper p-8 text-center">
-                    <p className="font-display text-xl font-bold">
+                    <Illustration name="step-request" className="mx-auto h-32 w-48" />
+                    <p className="mt-2 font-display text-xl font-bold">
                       {tab === "active" ? "No active bookings" : "No past bookings yet"}
                     </p>
                     <p className="mt-1 text-muted">When you book a service it will show up here.</p>

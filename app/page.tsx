@@ -2,19 +2,22 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { RequestBuilder } from "@/components/RequestBuilder";
 import { BookingTicket } from "@/components/BookingTicket";
-import { Icon } from "@/components/Icon";
+import { Illustration } from "@/components/Illustration";
 import { SERVICES, ROOMS } from "@/lib/services";
 
 const STEPS = [
   {
+    art: "step-request",
     title: "Tell us what needs fixing",
     text: "Pick the service, your district and a time that works. Add a photo or a note if it helps.",
   },
   {
+    art: "step-pro",
     title: "Choose a verified technician",
     text: "Every provider is checked before they can take jobs. Compare starting prices, experience and reviews.",
   },
   {
+    art: "step-bill",
     title: "Track the visit, pay after",
     text: "Follow the job from accepted to on the way to done. You see the bill for labour and parts before you pay.",
   },
@@ -58,12 +61,10 @@ export default function Home() {
                 <Link
                   key={s.slug}
                   href={`/browse?service=${s.slug}`}
-                  className="group flex gap-4 border-b border-line p-6 hover:bg-mist sm:border-r sm:p-7"
+                  className="group flex flex-col border-b border-line p-5 hover:bg-mist sm:border-r sm:p-6"
                 >
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-mist text-palm group-hover:bg-palm group-hover:text-white">
-                    <Icon name={s.slug} />
-                  </span>
-                  <span>
+                  <Illustration name={s.slug} className="mx-auto h-36 w-full max-w-[16rem] transition-transform duration-200 group-hover:-translate-y-1 motion-reduce:transition-none" />
+                  <span className="mt-3">
                     <span className="block font-display text-xl font-bold text-ink">{s.name}</span>
                     <span className="mt-1 block text-[15px] leading-snug text-muted">{s.jobs}</span>
                   </span>
@@ -75,9 +76,7 @@ export default function Home() {
               href={`/browse?service=${ROOMS.slug}`}
               className="mt-6 flex flex-col gap-5 rounded-3xl bg-ink p-7 text-white hover:bg-palm-deep sm:flex-row sm:items-center sm:p-9"
             >
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sun text-ink">
-                <Icon name="rooms" className="h-8 w-8" />
-              </span>
+              <Illustration name="rooms" className="h-28 w-40 shrink-0 sm:h-32 sm:w-48" />
               <span className="flex-1">
                 <span className="block font-display text-2xl font-bold sm:text-3xl">
                   Looking for a room instead?
@@ -99,9 +98,14 @@ export default function Home() {
             <h2 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">How it works</h2>
             <ol className="mt-12 grid gap-10 md:grid-cols-3">
               {STEPS.map((step, i) => (
-                <li key={step.title} className="border-t-4 border-ink pt-6">
-                  <span className="font-display text-6xl font-extrabold text-sun">{i + 1}</span>
-                  <h3 className="mt-3 font-display text-2xl font-bold">{step.title}</h3>
+                <li key={step.title}>
+                  <Illustration name={step.art} className="h-44 w-full max-w-[18rem]" />
+                  <div className="mt-4 border-t-4 border-ink pt-5">
+                    <h3 className="flex items-baseline gap-3 font-display text-2xl font-bold">
+                      <span className="font-display text-4xl font-extrabold text-sun">{i + 1}</span>
+                      {step.title}
+                    </h3>
+                  </div>
                   <p className="mt-2 max-w-[38ch] leading-relaxed text-muted">{step.text}</p>
                 </li>
               ))}
@@ -111,7 +115,7 @@ export default function Home() {
 
         {/* Providers */}
         <section id="providers" className="bg-palm text-white">
-          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-20 sm:px-6 md:grid-cols-[1.4fr_1fr] md:items-end">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-20 sm:px-6 md:grid-cols-[1.4fr_1fr] md:items-center">
             <div>
               <h2 className="max-w-[18ch] font-display text-4xl font-bold tracking-tight sm:text-5xl">
                 Fix things for a living? Get jobs near you.
@@ -121,7 +125,8 @@ export default function Home() {
                 districts and working hours, and accept the jobs that suit you.
               </p>
             </div>
-            <div className="md:text-right">
+            <div className="flex flex-col items-start gap-6 md:items-end">
+              <Illustration name="step-pro" className="h-44 w-full max-w-[17rem]" />
               <Link
                 href="/login"
                 className="inline-block rounded-full bg-sun px-7 py-4 text-lg font-semibold text-ink hover:bg-white"
