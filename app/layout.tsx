@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const display = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -23,7 +24,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }

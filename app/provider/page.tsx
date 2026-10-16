@@ -238,8 +238,11 @@ function ProviderJob({ b, vat, onChange }: { b: Row; vat: boolean; onChange: () 
 
   return (
     <article className="rounded-3xl bg-paper p-5 sm:p-6">
-      <BookingHeader b={b} who={customer} />
+      <Link href={`/booking?id=${b.id}`} className="block rounded-2xl hover:bg-mist/60">
+        <BookingHeader b={b} who={customer} />
+      </Link>
       <Progress status={b.status} kind={b.kind} />
+      <Link href={`/booking?id=${b.id}`} className="mt-3 inline-block text-[15px] font-semibold text-palm underline">Messages and details</Link>
 
       {b.address && <p className="mt-4 text-[15px]"><span className="text-muted">Address: </span>{b.address}</p>}
       {b.note && <p className="mt-2 text-[15px]"><span className="text-muted">Note: </span>{b.note}</p>}

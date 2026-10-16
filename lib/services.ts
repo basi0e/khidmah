@@ -57,3 +57,10 @@ export const SLOTS = [
 export const PAY_METHODS = ["Cash", "mada card", "Apple Pay", "STC Pay"];
 
 export const PROVIDER_TYPES = ["Individual technician", "Company", "Landlord / room owner"];
+
+/** Documents each provider type needs for verification: [name, required] */
+export const REQUIRED_DOCS: Record<string, [string, boolean][]> = {
+  "Individual technician": [["Iqama or national ID", true], ["Trade or skill certificate", false]],
+  Company: [["Commercial Registration (CR)", true], ["Municipality licence (Baladi)", true], ["VAT registration certificate", false]],
+  "Landlord / room owner": [["Iqama or national ID", true], ["Title deed or Ejar lease contract", true]],
+};

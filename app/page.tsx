@@ -3,7 +3,6 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { RequestBuilder } from "@/components/RequestBuilder";
 import { BookingTicket } from "@/components/BookingTicket";
 import { Icon } from "@/components/Icon";
-import { Logo } from "@/components/Logo";
 import { SERVICES, ROOMS } from "@/lib/services";
 
 const STEPS = [
@@ -51,14 +50,14 @@ export default function Home() {
               What can we help with?
             </h2>
             <p className="mt-3 max-w-[56ch] text-lg text-muted">
-              Choose a service to see technicians near you.
+              Choose a service to compare providers near you.
             </p>
 
             <div className="mt-10 grid grid-cols-1 overflow-hidden rounded-3xl border border-line bg-paper sm:grid-cols-2 lg:grid-cols-3">
               {SERVICES.map((s) => (
                 <Link
                   key={s.slug}
-                  href={`/request?service=${s.slug}`}
+                  href={`/browse?service=${s.slug}`}
                   className="group flex gap-4 border-b border-line p-6 hover:bg-mist sm:border-r sm:p-7"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-mist text-palm group-hover:bg-palm group-hover:text-white">
@@ -73,7 +72,7 @@ export default function Home() {
             </div>
 
             <Link
-              href={`/request?service=${ROOMS.slug}`}
+              href={`/browse?service=${ROOMS.slug}`}
               className="mt-6 flex flex-col gap-5 rounded-3xl bg-ink p-7 text-white hover:bg-palm-deep sm:flex-row sm:items-center sm:p-9"
             >
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sun text-ink">
@@ -134,13 +133,6 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="bg-ink text-white">
-        <div className="sadu" />
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <Logo light />
-          <p className="text-white/70">Serving Riyadh and Dammam</p>
-        </div>
-      </footer>
     </>
   );
 }

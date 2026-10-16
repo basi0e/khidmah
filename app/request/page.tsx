@@ -61,6 +61,7 @@ export default function RequestPage() {
   const [district, setDistrict] = useState("");
   const [providers, setProviders] = useState<Provider[] | null>(null);
   const [providerId, setProviderId] = useState("");
+  const [wanted, setWanted] = useState<string | null>(null);
   const [asap, setAsap] = useState(false);
   const [day, setDay] = useState("");
   const [slot, setSlot] = useState("");
@@ -68,6 +69,7 @@ export default function RequestPage() {
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
   const [pay, setPay] = useState("Cash");
+  const [saved, setSaved] = useState<{ id: string; label: string; district: string; detail: string }[]>([]);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -86,6 +88,8 @@ export default function RequestPage() {
     const w = q.get("when") ?? "flexible";
     setWhen(w);
     const qCity = q.get("city");
+    const qProvider = q.get("provider");
+    if (qProvider) setWanted(qProvider);
 
     supabase.auth.getSession().then(async ({ data }) => {
       const user = data.session?.user;
@@ -94,6 +98,8 @@ export default function RequestPage() {
         const { data: p } = await supabase.from("profiles").select("role, city").eq("id", user.id).maybeSingle();
         if (p) {
           setMe({ id: user.id, role: p.role, city: p.city });
+          const { data: addr } = await supabase.from("addresses").select("id, label, district, detail").eq("user_id", user.id).order("created_at");
+          setSaved(addr ?? []);
           profileCity = p.city;
         }
       }
@@ -118,9 +124,11 @@ export default function RequestPage() {
       .eq("profile.city", city)
       .then(({ data, error }) => {
         if (error) setError(error.message);
-        setProviders((data as unknown as Provider[]) ?? []);
+        const list = (data as unknown as Provider[]) ?? [];
+        setProviders(list);
+        if (wanted && list.some((p) => p.user_id === wanted)) setProviderId(wanted);
       });
-  }, [service, city, ready, supabase]);
+  }, [service, city, ready, supabase, wanted]);
 
   function changeCity(c: string) {
     setCity(c);
@@ -330,6 +338,17 @@ export default function RequestPage() {
 
                   <Panel>
                     <SectionTitle n={4}>Your details</SectionTitle>
+                    {!isRoom && saved.filter((a) => DISTRICTS[city].includes(a.district)).length > 0 && (
+                      <div className="mt-5 flex flex-wrap gap-2" aria-label="Saved addresses">
+                        {saved.filter((a) => DISTRICTS[city].includes(a.district)).map((a) => (
+                          <Chip key={a.id} selected={address === a.detail && district === a.district}
+                            onClick={() => { setAddress(a.detail); setDistrict(a.district); }}>
+                            <span className="block">{a.label}</span>
+                            <span className="block text-sm opacity-80">{a.district}</span>
+                          </Chip>
+                        ))}
+                      </div>
+                    )}
                     {!isRoom && (
                       <>
                         <label className={`${labelCls} mt-5`} htmlFor="address">Address</label>

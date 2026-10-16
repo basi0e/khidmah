@@ -364,7 +364,7 @@ function BookingsTab({ rows, onChange }: { rows: AdminBooking[] | null; onChange
                 return (
                   <tr key={b.id} className="border-b border-line last:border-0 align-top">
                     <td className="px-4 py-3">
-                      <span className="text-sm tabular-nums text-muted">{b.ref}</span>
+                      <Link href={`/booking?id=${b.id}`} className="text-sm tabular-nums text-palm underline">{b.ref}</Link>
                       <br />{b.service}{b.urgent && <span className="ml-1 font-bold text-red-700">urgent</span>}
                     </td>
                     <td className="px-4 py-3">{b.customer?.name ?? "Deleted"}<br /><span className="text-sm text-muted">{b.customer_phone ?? ""}</span></td>

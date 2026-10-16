@@ -142,8 +142,11 @@ function CustomerBooking({ b, onChange }: { b: Row; onChange: () => void }) {
 
   return (
     <article className="rounded-3xl bg-paper p-5 sm:p-6">
-      <BookingHeader b={b} who={providerName} />
+      <Link href={`/booking?id=${b.id}`} className="block rounded-2xl hover:bg-mist/60">
+        <BookingHeader b={b} who={providerName} />
+      </Link>
       <Progress status={b.status} kind={b.kind} />
+      <Link href={`/booking?id=${b.id}`} className="mt-3 inline-block text-[15px] font-semibold text-palm underline">Messages and details</Link>
 
       {b.status_reason && ["Declined", "Cancelled"].includes(b.status) && (
         <p className="mt-4 text-[15px] text-red-800">Reason: {b.status_reason}</p>
