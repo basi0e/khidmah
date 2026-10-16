@@ -40,7 +40,7 @@ export function SiteHeader() {
           <a href="#how" className="hidden hover:text-ink md:inline">How it works</a>
           <a href="#providers" className="hidden hover:text-ink md:inline">For providers</a>
           <Link
-            href={role === "provider" ? "/provider" : role === "customer" ? "/account" : "/login"}
+            href={role === "provider" ? "/provider" : role === "customer" ? "/account" : role === "admin" ? "/admin" : "/login"}
             className="rounded-full border border-ink px-4 py-2 text-ink hover:bg-ink hover:text-white"
           >
             {name ? name : "Log in"}

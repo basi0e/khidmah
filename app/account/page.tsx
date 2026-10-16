@@ -49,6 +49,12 @@ export default function AccountPage() {
               <Link href="/login?next=/account" className={`${primaryBtn} mt-5 inline-block`}>Log in</Link>
             </Panel>
           )}
+          {me && me.role === "admin" && (
+            <Panel>
+              <h1 className="font-display text-3xl font-bold">This is the admin account</h1>
+              <Link href="/admin" className={`${primaryBtn} mt-5 inline-block`}>Open admin</Link>
+            </Panel>
+          )}
           {me && me.role === "provider" && (
             <Panel>
               <h1 className="font-display text-3xl font-bold">This is a provider account</h1>

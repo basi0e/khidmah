@@ -329,11 +329,11 @@ export default function LoginPage() {
               <>
                 <h1 className="font-display text-3xl font-bold">You&apos;re logged in, {name}.</h1>
                 <p className="mt-2 text-muted">
-                  {role === "provider" ? "Booking requests will show up in your account." : "Ready to book a service."}
+                  {role === "provider" ? "Booking requests will show up in your account." : role === "admin" ? "You have admin access." : "Ready to book a service."}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <a href={role === "provider" ? "/provider" : "/account"} className={primaryBtn}>
-                    {role === "provider" ? "Go to your jobs" : "My bookings"}
+                  <a href={role === "provider" ? "/provider" : role === "admin" ? "/admin" : "/account"} className={primaryBtn}>
+                    {role === "provider" ? "Go to your jobs" : role === "admin" ? "Open admin" : "My bookings"}
                   </a>
                   <button className="rounded-full border-2 border-ink px-6 py-3 font-semibold hover:bg-mist" onClick={signOut}>
                     Log out
