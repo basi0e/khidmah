@@ -21,19 +21,19 @@ export default function SettingsPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 bg-mist px-4 py-12 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-2xl space-y-6">
           {me === undefined && <p className="text-muted">Loading…</p>}
           {me === null && (
             <Panel>
-              <h1 className="font-display text-3xl font-bold">Log in to see your settings</h1>
+              <h1 className="text-2xl font-bold sm:text-3xl">Log in to see your settings</h1>
               <Link href="/login?next=/settings" className={`${primaryBtn} mt-5 inline-block`}>Log in</Link>
             </Panel>
           )}
           {me && (
             <>
               <div className="flex flex-wrap items-end justify-between gap-3">
-                <h1 className="font-display text-4xl font-bold tracking-tight">Settings</h1>
+                <h1 className="text-[26px] font-bold tracking-tight sm:text-4xl">Settings</h1>
                 <button className={ghostBtn} onClick={logOut}>Log out</button>
               </div>
               <ProfileSection me={me} />
@@ -52,7 +52,7 @@ export default function SettingsPage() {
 function Status({ msg }: { msg: string }) {
   if (!msg) return null;
   const ok = msg.startsWith("✓");
-  return <p className={`mt-3 text-sm font-medium ${ok ? "text-palm" : "text-red-700"}`}>{msg}</p>;
+  return <p className={`mt-3 text-sm font-medium ${ok ? "text-palm" : "text-[#b42318]"}`}>{msg}</p>;
 }
 
 function ProfileSection({ me }: { me: Me }) {
@@ -81,7 +81,7 @@ function ProfileSection({ me }: { me: Me }) {
 
   return (
     <Panel>
-      <h2 className="font-display text-2xl font-bold">Your details</h2>
+      <h2 className="text-xl font-bold">Your details</h2>
       <p className="mt-1 text-[15px] text-muted">Logged in as {email}</p>
       <label className={`${labelCls} mt-5`} htmlFor="name">Name</label>
       <input id="name" className={inputCls} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
@@ -122,13 +122,13 @@ function PasswordSection() {
 
   return (
     <Panel>
-      <h2 className="font-display text-2xl font-bold">Password</h2>
+      <h2 className="text-xl font-bold">Password</h2>
       <label className={`${labelCls} mt-5`} htmlFor="pw">New password</label>
       <input id="pw" className={inputCls} type="password" autoComplete="new-password" placeholder="At least 8 characters"
         value={pw} onChange={(e) => setPw(e.target.value)} />
       <label className={`${labelCls} mt-4`} htmlFor="pw2">Repeat it</label>
       <input id="pw2" className={inputCls} type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
-      {pw2 && pw !== pw2 && <p className="mt-2 text-sm text-red-700">The passwords don&apos;t match.</p>}
+      {pw2 && pw !== pw2 && <p className="mt-2 text-sm text-[#b42318]">The passwords don&apos;t match.</p>}
       <button className={`${primaryBtn} mt-6`} disabled={busy || pw.length < 8 || pw !== pw2} onClick={save}>Change password</button>
       <Status msg={msg} />
     </Panel>
@@ -167,14 +167,14 @@ function AddressesSection({ me }: { me: Me }) {
 
   return (
     <Panel>
-      <h2 className="font-display text-2xl font-bold">Saved addresses</h2>
+      <h2 className="text-xl font-bold">Saved addresses</h2>
       <p className="mt-1 text-[15px] text-muted">Pick these with one tap when you book.</p>
       <ul className="mt-4 space-y-2">
         {list?.length === 0 && <li className="text-muted">No saved addresses yet.</li>}
         {list?.map((a) => (
           <li key={a.id} className="flex items-start justify-between gap-3 rounded-xl bg-mist p-3">
             <span><span className="font-semibold">{a.label}</span><br /><span className="text-[15px] text-muted">{a.district}, {a.detail}</span></span>
-            <button className="text-sm font-semibold text-red-700 underline" onClick={() => remove(a.id)}>Remove</button>
+            <button className="text-sm font-semibold text-[#b42318] underline" onClick={() => remove(a.id)}>Remove</button>
           </li>
         ))}
       </ul>
@@ -209,7 +209,7 @@ function FavouritesSection({ me }: { me: Me }) {
 
   return (
     <Panel>
-      <h2 className="font-display text-2xl font-bold">Saved providers</h2>
+      <h2 className="text-xl font-bold">Saved providers</h2>
       {list?.length === 0 && <p className="mt-3 text-muted">Tap Save on a provider&apos;s profile to keep them here.</p>}
       <ul className="mt-4 flex flex-wrap gap-2">
         {list?.map((f) => (
@@ -275,7 +275,7 @@ function DocumentsSection({ me }: { me: Me }) {
 
   return (
     <Panel>
-      <h2 className="font-display text-2xl font-bold">Verification documents</h2>
+      <h2 className="text-xl font-bold">Verification documents</h2>
       <p className="mt-1 text-[15px] text-muted">
         Status: <span className="font-semibold text-ink">{status}</span>. Only Khidmah admins can see these files.
       </p>
@@ -284,14 +284,14 @@ function DocumentsSection({ me }: { me: Me }) {
           const mine = docs.filter((d) => d.doc_type === type);
           return (
             <li key={type} className="rounded-2xl border-2 border-line p-4">
-              <p className="font-semibold">{type} {required ? <span className="text-sm text-red-700">(required)</span> : <span className="text-sm text-muted">(optional)</span>}</p>
+              <p className="font-semibold">{type} {required ? <span className="text-sm text-[#b42318]">(required)</span> : <span className="text-sm text-muted">(optional)</span>}</p>
               {mine.map((d) => (
                 <p key={d.id} className="mt-1 flex items-center justify-between gap-3 text-[15px]">
                   <span>✓ {d.file_name}</span>
-                  <button className="text-sm font-semibold text-red-700 underline" onClick={() => remove(d)}>Remove</button>
+                  <button className="text-sm font-semibold text-[#b42318] underline" onClick={() => remove(d)}>Remove</button>
                 </p>
               ))}
-              <label className="mt-3 inline-block cursor-pointer rounded-full border-2 border-ink px-4 py-2 text-[15px] font-semibold hover:bg-mist">
+              <label className="mt-3 inline-block cursor-pointer rounded-full border border-line-strong px-4 py-2 text-[15px] font-semibold hover:bg-mist">
                 {busy === type ? "Uploading…" : mine.length ? "Upload another" : "Upload file"}
                 <input type="file" accept="image/*,.pdf" className="sr-only" disabled={!!busy}
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(type, f); e.target.value = ""; }} />

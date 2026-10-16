@@ -2,6 +2,7 @@
 
 import { findService } from "@/lib/services";
 import { Icon } from "./Icon";
+import { StatusBadge } from "./ui";
 import { dayLabel } from "@/lib/useMe";
 
 export type Bill = {
@@ -40,22 +41,15 @@ export const FLOW = ["Requested", "Accepted", "On the way", "In progress", "Comp
 export const ROOM_FLOW = ["Requested", "Accepted", "Completed"];
 export const ACTIVE = ["Requested", "Accepted", "On the way", "In progress"];
 
-const PILL: Record<string, string> = {
-  Requested: "bg-sun/25 text-ink",
-  Accepted: "bg-palm/15 text-palm-deep",
-  "On the way": "bg-palm/15 text-palm-deep",
-  "In progress": "bg-palm/15 text-palm-deep",
-  Completed: "bg-palm text-white",
-  Declined: "bg-red-100 text-red-800",
-  Cancelled: "bg-red-100 text-red-800",
-};
+export function statusTone(status: string): "green" | "sun" | "red" | "grey" | "solid" {
+  if (status === "Requested") return "sun";
+  if (status === "Completed") return "solid";
+  if (status === "Declined" || status === "Cancelled") return "red";
+  return "green";
+}
 
 export function StatusPill({ status }: { status: string }) {
-  return (
-    <span className={`rounded-full px-3 py-1 text-sm font-semibold ${PILL[status] ?? "bg-mist"}`}>
-      {status}
-    </span>
-  );
+  return <StatusBadge tone={statusTone(status)}>{status}</StatusBadge>;
 }
 
 export function Progress({ status, kind }: { status: string; kind: string }) {
@@ -63,39 +57,40 @@ export function Progress({ status, kind }: { status: string; kind: string }) {
   const at = flow.indexOf(status);
   if (at < 0) return null;
   return (
-    <ol className="mt-5 flex items-center gap-1.5" aria-label="Booking progress">
-      {flow.map((s, i) => (
-        <li key={s} className="flex flex-1 flex-col gap-1.5">
-          <span className={`h-1.5 rounded-full ${i <= at ? (i === at && s !== "Completed" ? "bg-sun" : "bg-palm") : "bg-line"}`} />
-          <span className={`text-xs ${i <= at ? "font-semibold text-ink" : "text-muted"}`}>{s}</span>
-        </li>
-      ))}
-    </ol>
+    <div className="mt-4">
+      <ol className="flex gap-1" aria-label={`Progress: ${status}`}>
+        {flow.map((s, i) => (
+          <li key={s} className={`h-[5px] flex-1 rounded-full ${i < at || (i === at && s === "Completed") ? "bg-palm" : i === at ? "bg-sun" : "bg-line"}`} />
+        ))}
+      </ol>
+      <p className="mt-2 text-[13px] text-muted">
+        Step {at + 1} of {flow.length}: <span className="font-semibold text-ink">{status}</span>
+        {at < flow.length - 1 && <>, next {flow[at + 1].toLowerCase()}</>}
+      </p>
+    </div>
   );
 }
 
 export function BookingHeader({ b, who }: { b: BookingRow; who: string }) {
   const svc = findService(b.category);
   return (
-    <div className="flex items-start gap-4">
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-mist text-palm">
-        <Icon name={svc?.slug ?? "ac"} />
+    <div className="flex items-start gap-3">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-palm-50 text-palm">
+        <Icon name={svc?.slug ?? "ac"} className="h-6 w-6" />
       </span>
-      <div className="flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-display text-xl font-bold">{b.service}</h3>
-          {b.urgent && <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-bold text-white">Urgent</span>}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-[17px] font-bold leading-snug">{b.service}</h3>
+          <StatusPill status={b.status} />
         </div>
-        <p className="text-[15px] text-muted">
-          {who}, {b.district}, {b.city}
+        <p className="mt-0.5 text-[14px] text-muted">
+          {dayLabel(b.visit_date)}, {b.visit_slot.replace(/\s*\(.*\)/, "")}. {b.district}
         </p>
-        <p className="text-[15px] text-ink">
-          {dayLabel(b.visit_date)}, {b.visit_slot}
+        <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[14px] text-muted">
+          <span>{who}</span>
+          <span className="tabular-nums text-[12px]">{b.ref}</span>
+          {b.urgent && <span className="rounded-full bg-[#b42318] px-2 py-0.5 text-[11px] font-bold text-white">Urgent</span>}
         </p>
-      </div>
-      <div className="flex flex-col items-end gap-2">
-        <StatusPill status={b.status} />
-        <span className="text-xs tabular-nums text-muted">{b.ref}</span>
       </div>
     </div>
   );
@@ -103,8 +98,8 @@ export function BookingHeader({ b, who }: { b: BookingRow; who: string }) {
 
 export function BillView({ bill, vatRegistered = false }: { bill: Bill; vatRegistered?: boolean }) {
   return (
-    <div className="mt-5 rounded-2xl bg-mist p-4">
-      <p className="font-semibold">Bill</p>
+    <div className="mt-4 rounded-xl bg-soft p-4">
+      <p className="text-[15px] font-semibold">Bill</p>
       <dl className="mt-2 grid grid-cols-[1fr_auto] gap-y-1 text-[15px]">
         <dt className="text-muted">Labour</dt><dd className="tabular-nums">SAR {Number(bill.labour).toFixed(2)}</dd>
         <dt className="text-muted">Parts{bill.parts_note ? ` (${bill.parts_note})` : ""}</dt>
@@ -112,8 +107,8 @@ export function BillView({ bill, vatRegistered = false }: { bill: Bill; vatRegis
         {(vatRegistered || Number(bill.vat_amount) > 0) && (
           <><dt className="text-muted">VAT</dt><dd className="tabular-nums">SAR {Number(bill.vat_amount ?? 0).toFixed(2)}</dd></>
         )}
-        <dt className="font-semibold">Total, paid by {bill.paid_method}</dt>
-        <dd className="font-display text-lg font-bold tabular-nums">SAR {Number(bill.total ?? 0).toFixed(2)}</dd>
+        <dt className="mt-1 border-t border-line pt-2 font-semibold">Total, paid by {bill.paid_method}</dt>
+        <dd className="mt-1 border-t border-line pt-2 text-lg font-bold tabular-nums">SAR {Number(bill.total ?? 0).toFixed(2)}</dd>
       </dl>
     </div>
   );

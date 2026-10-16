@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { Chip, Panel, inputCls, labelCls, primaryBtn } from "@/components/ui";
+import { Chip, Panel, Segmented, inputCls, labelCls, primaryBtn } from "@/components/ui";
 import { ALL_SERVICES, DISTRICTS, PROVIDER_TYPES } from "@/lib/services";
 
 type Step = "loading" | "email" | "sent" | "profile" | "provider" | "done";
@@ -199,22 +199,16 @@ export default function LoginPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 bg-mist px-4 py-14 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10">
         <div className={`mx-auto ${step === "provider" ? "max-w-2xl" : "max-w-md"}`}>
           <Panel>
             {step === "loading" && <p className="text-muted">Checking your login…</p>}
 
             {step === "email" && (
               <>
-                <div className="flex gap-2" role="tablist">
-                  {(["login", "signup"] as const).map((m) => (
-                    <button key={m} role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setMessage(""); }}
-                      className={`rounded-full px-5 py-2 font-semibold ${mode === m ? "bg-ink text-white" : "bg-mist text-ink"}`}>
-                      {m === "login" ? "Log in" : "Create account"}
-                    </button>
-                  ))}
-                </div>
-                <h1 className="mt-6 font-display text-3xl font-bold">
+                <Segmented label="Log in or create account" value={mode} onChange={(m) => { setMode(m); setMessage(""); }}
+                  options={[["login", "Log in"], ["signup", "Create account"]]} />
+                <h1 className="mt-6 text-2xl font-bold sm:text-3xl">
                   {mode === "login" ? "Welcome back" : "Join Khidmah"}
                 </h1>
                 <label className={`${labelCls} mt-5`} htmlFor="email">Email</label>
@@ -239,7 +233,7 @@ export default function LoginPage() {
 
             {step === "sent" && (
               <>
-                <h1 className="font-display text-3xl font-bold">Check your email</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">Check your email</h1>
                 <p className="mt-3 text-ink">
                   We sent an email to <strong>{email}</strong>. Open the link in it to continue.
                 </p>
@@ -252,7 +246,7 @@ export default function LoginPage() {
 
             {step === "profile" && (
               <>
-                <h1 className="font-display text-3xl font-bold">Welcome to Khidmah</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">Welcome to Khidmah</h1>
                 <p className="mt-2 text-muted">A few details to set up your account.</p>
                 <label className={`${labelCls} mt-6`} htmlFor="name">Your name</label>
                 <input id="name" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
@@ -275,7 +269,7 @@ export default function LoginPage() {
 
             {step === "provider" && (
               <>
-                <h1 className="font-display text-3xl font-bold">Your provider profile</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">Your provider profile</h1>
                 <p className="mt-2 text-muted">Customers see this when choosing who to book.</p>
 
                 <p className={`${labelCls} mt-6`}>I am</p>
@@ -335,7 +329,7 @@ export default function LoginPage() {
 
             {step === "done" && (
               <>
-                <h1 className="font-display text-3xl font-bold">You&apos;re logged in, {name}.</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">You&apos;re logged in, {name}.</h1>
                 <p className="mt-2 text-muted">
                   {role === "provider" ? "Booking requests will show up in your account." : role === "admin" ? "You have admin access." : "Ready to book a service."}
                 </p>
@@ -343,14 +337,14 @@ export default function LoginPage() {
                   <a href={role === "provider" ? "/provider" : role === "admin" ? "/admin" : "/account"} className={primaryBtn}>
                     {role === "provider" ? "Go to your jobs" : role === "admin" ? "Open admin" : "My bookings"}
                   </a>
-                  <button className="rounded-full border-2 border-ink px-6 py-3 font-semibold hover:bg-mist" onClick={signOut}>
+                  <button className="rounded-full border border-line-strong px-6 py-3 font-semibold hover:bg-mist" onClick={signOut}>
                     Log out
                   </button>
                 </div>
               </>
             )}
 
-            {message && <p className="mt-4 text-sm font-medium text-red-700">{message}</p>}
+            {message && <p className="mt-4 text-sm font-medium text-[#b42318]">{message}</p>}
           </Panel>
         </div>
       </main>

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Illustration } from "@/components/Illustration";
-import { Chip, Panel, inputCls, labelCls, primaryBtn, ghostBtn } from "@/components/ui";
+import { Chip, Panel, Segmented, inputCls, labelCls, primaryBtn, ghostBtn } from "@/components/ui";
+import { UiIcon } from "@/components/NavIcons";
 import { ACTIVE, BillView, BookingHeader, Progress, type Bill, type BookingRow } from "@/components/Booking";
 import { createClient } from "@/lib/supabase/client";
 import { one, useMe } from "@/lib/useMe";
@@ -66,18 +67,18 @@ export default function ProviderPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 bg-mist px-4 py-12 sm:px-6">
-        <div className="mx-auto max-w-3xl">
+      <main className="flex-1">
+        <div className={me?.role === "provider" && pp ? "" : "mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-10"}>
           {me === undefined && <p className="text-muted">Loading…</p>}
           {me === null && (
             <Panel>
-              <h1 className="font-display text-3xl font-bold">Log in to see your jobs</h1>
+              <h1 className="text-2xl font-bold">Log in to see your jobs</h1>
               <Link href="/login?next=/provider" className={`${primaryBtn} mt-5 inline-block`}>Log in</Link>
             </Panel>
           )}
           {me && me.role !== "provider" && (
             <Panel>
-              <h1 className="font-display text-3xl font-bold">This page is for service providers</h1>
+              <h1 className="text-2xl font-bold">This page is for service providers</h1>
               <p className="mt-2 text-muted">Your account is set up for booking services.</p>
               <Link href="/account" className={`${primaryBtn} mt-5 inline-block`}>Go to my bookings</Link>
             </Panel>
@@ -85,7 +86,7 @@ export default function ProviderPage() {
 
           {me?.role === "provider" && pp === null && (
             <Panel>
-              <h1 className="font-display text-3xl font-bold">Finish your provider profile</h1>
+              <h1 className="text-2xl font-bold">Finish your provider profile</h1>
               <p className="mt-2 text-muted">Add your services and districts so customers can find you.</p>
               <Link href="/login?next=/provider" className={`${primaryBtn} mt-5 inline-block`}>Set up profile</Link>
             </Panel>
@@ -93,39 +94,43 @@ export default function ProviderPage() {
 
           {me?.role === "provider" && pp && (
             <>
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <div>
-                  <h1 className="font-display text-4xl font-bold tracking-tight">Your jobs</h1>
-                  <p className="mt-1 text-muted">{me.name}, {pp.provider_type.toLowerCase()} in {me.city}</p>
+              <div className="bg-palm text-white">
+                <div className="mx-auto max-w-2xl px-4 pb-6 pt-5 sm:px-6 sm:pt-8">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-[14px] text-white/75">{me.name}, {me.city}</p>
+                      <h1 className="text-[26px] font-bold tracking-tight sm:text-3xl">Your jobs</h1>
+                    </div>
+                    <AvailabilitySwitch available={pp.available} onChange={load} />
+                  </div>
+                  <dl className="mt-5 grid grid-cols-3 gap-2">
+                    {[["New", fresh.length], ["In progress", active.length], ["Completed", rows?.filter((r) => r.status === "Completed").length ?? 0]].map(([l, v]) => (
+                      <div key={l as string} className="rounded-2xl bg-white/12 p-3">
+                        <dt className="text-[13px] text-white/75">{l}</dt>
+                        <dd className="mt-0.5 text-2xl font-bold tabular-nums">{rows ? v : "–"}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
-                <AvailabilitySwitch available={pp.available} onChange={load} />
               </div>
 
+              <div className="mx-auto max-w-2xl px-4 pb-8 sm:px-6">
               <VerificationBanner status={pp.status} reason={pp.reject_reason} />
 
-              <div className="mt-6 flex flex-wrap gap-2" role="tablist">
-                {([
-                  ["new", `New requests (${fresh.length})`],
-                  ["active", `In progress (${active.length})`],
-                  ["past", `Past (${past.length})`],
-                  ["profile", "My profile"],
-                ] as [Tab, string][]).map(([t, label]) => (
-                  <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-                    className={`rounded-full px-5 py-2 font-semibold ${tab === t ? "bg-ink text-white" : "bg-paper text-ink"}`}>
-                    {label}
-                  </button>
-                ))}
+              <div className="no-scrollbar -mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                <Segmented label="Jobs" value={tab} onChange={setTab}
+                  options={[["new", `New (${fresh.length})`], ["active", `Active (${active.length})`], ["past", "Past"], ["profile", "Profile"]]} />
               </div>
 
               {tab === "profile" ? (
                 <ProfileEditor pp={pp} city={me.city} onSaved={load} />
               ) : (
-                <div className="mt-5 space-y-4">
+                <div className="mt-4 space-y-3">
                   {rows === null && <p className="text-muted">Loading jobs…</p>}
                   {rows && list.length === 0 && (
-                    <div className="rounded-3xl bg-paper p-8 text-center">
+                    <div className="rounded-2xl bg-paper shadow-card p-8 text-center">
                       <Illustration name="step-pro" className="mx-auto h-32 w-48" />
-                    <p className="mt-2 font-display text-xl font-bold">
+                    <p className="mt-2 text-lg font-bold">
                         {tab === "new" ? "No new requests right now" : tab === "active" ? "No jobs in progress" : "No past jobs yet"}
                       </p>
                       <p className="mt-1 text-muted">
@@ -138,7 +143,8 @@ export default function ProviderPage() {
                   ))}
                 </div>
               )}
-              {error && <p className="mt-4 font-medium text-red-700">{error}</p>}
+              {error && <p className="mt-4 font-medium text-[#b42318]">{error}</p>}
+              </div>
             </>
           )}
         </div>
@@ -156,7 +162,7 @@ function VerificationBanner({ status, reason }: { status: string; reason: string
       ? "We're reviewing your documents. You can still receive requests meanwhile."
       : "Your profile shows as verification pending until we check your documents.";
   return (
-    <p className={`mt-5 rounded-2xl px-4 py-3 text-[15px] ${status === "Rejected" ? "bg-red-100 text-red-900" : "bg-sun/25 text-ink"}`}>
+    <p className={`mt-4 rounded-2xl px-4 py-3 text-[15px] ${status === "Rejected" ? "bg-[#fdecea] text-[#9b1c13]" : "bg-sun-50 text-sun-ink"}`}>
       {text}
     </p>
   );
@@ -173,10 +179,12 @@ function AvailabilitySwitch({ available, onChange }: { available: boolean; onCha
     onChange();
   }
   return (
-    <button type="button" role="switch" aria-checked={available} disabled={busy} onClick={toggle}
-      className={`flex items-center gap-3 rounded-full px-4 py-2 font-semibold ${available ? "bg-palm text-white" : "bg-paper text-muted"}`}>
-      <span className={`h-3 w-3 rounded-full ${available ? "bg-sun" : "bg-line"}`} />
-      {available ? "Available for jobs" : "Not taking jobs"}
+    <button type="button" role="switch" aria-checked={available} aria-label="Available for jobs" disabled={busy} onClick={toggle}
+      className="flex min-h-11 shrink-0 items-center gap-2.5 rounded-full bg-white/15 py-1.5 pl-4 pr-1.5 text-[14px] font-semibold text-white">
+      {available ? "Available" : "Away"}
+      <span className={`relative h-7 w-12 rounded-full transition-colors ${available ? "bg-sun" : "bg-white/30"}`}>
+        <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${available ? "left-6" : "left-1"}`} />
+      </span>
     </button>
   );
 }
@@ -239,12 +247,11 @@ function ProviderJob({ b, vat, onChange }: { b: Row; vat: boolean; onChange: () 
   const step = NEXT_STEP[b.status];
 
   return (
-    <article className="rounded-3xl bg-paper p-5 sm:p-6">
-      <Link href={`/booking?id=${b.id}`} className="block rounded-2xl hover:bg-mist/60">
+    <article className="rounded-2xl bg-paper shadow-card p-5 sm:p-6">
+      <Link href={`/booking?id=${b.id}`} className="block">
         <BookingHeader b={b} who={customer} />
       </Link>
       <Progress status={b.status} kind={b.kind} />
-      <Link href={`/booking?id=${b.id}`} className="mt-3 inline-block text-[15px] font-semibold text-palm underline">Messages and details</Link>
 
       {b.address && <p className="mt-4 text-[15px]"><span className="text-muted">Address: </span>{b.address}</p>}
       {b.note && <p className="mt-2 text-[15px]"><span className="text-muted">Note: </span>{b.note}</p>}
@@ -266,24 +273,34 @@ function ProviderJob({ b, vat, onChange }: { b: Row; vat: boolean; onChange: () 
         </p>
       )}
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        {b.status === "Requested" && (
-          <>
-            <button className={primaryBtn} disabled={busy} onClick={() => move("Accepted")}>Accept</button>
-            <button className={ghostBtn} disabled={busy} onClick={() => move("Declined", "Why are you declining? (the customer will see this)")}>Decline</button>
-          </>
-        )}
+      {b.status === "Requested" && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button className={ghostBtn} disabled={busy} onClick={() => move("Declined", "Why are you declining? (the customer will see this)")}>Decline</button>
+          <button className={primaryBtn} disabled={busy} onClick={() => move("Accepted")}>Accept</button>
+        </div>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {b.kind !== "room" && step && (
-          <button className={primaryBtn} disabled={busy} onClick={() => move(step.to)}>{step.label}</button>
+          <button className={`${primaryBtn} flex-1 !bg-ink hover:!bg-black`} disabled={busy} onClick={() => move(step.to)}>{step.label}</button>
         )}
         {b.kind === "room" && b.status === "Accepted" && (
-          <button className={primaryBtn} disabled={busy} onClick={() => move("Completed")}>Viewing done</button>
+          <button className={`${primaryBtn} flex-1`} disabled={busy} onClick={() => move("Completed")}>Viewing done</button>
         )}
         {b.kind !== "room" && b.status === "In progress" && !finishing && (
-          <button className={primaryBtn} onClick={() => setFinishing(true)}>Finish job and add bill</button>
+          <button className={`${primaryBtn} flex-1`} onClick={() => setFinishing(true)}>Finish job and add bill</button>
+        )}
+        {ACTIVE.includes(b.status) && b.status !== "Requested" && (
+          <Link href={`/booking?id=${b.id}`} aria-label="Messages" className="flex h-12 w-12 items-center justify-center rounded-full bg-palm-50 text-palm-deep">
+            <UiIcon name="chat" className="h-5 w-5" />
+          </Link>
+        )}
+        {phone && ACTIVE.includes(b.status) && (
+          <a href={`tel:${phone}`} aria-label={`Call ${customer}`} className="flex h-12 w-12 items-center justify-center rounded-full border border-line-strong text-palm">
+            <UiIcon name="phone" className="h-5 w-5" />
+          </a>
         )}
         {["Accepted", "On the way"].includes(b.status) && (
-          <button className="font-semibold text-red-700 underline" disabled={busy}
+          <button className="font-semibold text-[#b42318] underline" disabled={busy}
             onClick={() => move("Cancelled", "Why are you cancelling? (the customer will see this)")}>
             Cancel job
           </button>
@@ -291,7 +308,7 @@ function ProviderJob({ b, vat, onChange }: { b: Row; vat: boolean; onChange: () 
       </div>
 
       {finishing && b.status === "In progress" && (
-        <div className="mt-5 rounded-2xl border-2 border-line p-4">
+        <div className="mt-4 rounded-xl bg-soft p-4">
           <p className="font-semibold">Bill for {customer}</p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <div>
@@ -316,7 +333,7 @@ function ProviderJob({ b, vat, onChange }: { b: Row; vat: boolean; onChange: () 
           </div>
         </div>
       )}
-      {msg && <p className="mt-3 text-sm font-medium text-red-700">{msg}</p>}
+      {msg && <p className="mt-3 text-sm font-medium text-[#b42318]">{msg}</p>}
     </article>
   );
 }
@@ -389,7 +406,7 @@ function ProfileEditor({ pp, city, onSaved }: { pp: PP; city: string; onSaved: (
         <button className={`${primaryBtn} mt-6`} disabled={busy || services.length === 0 || districts.length === 0 || Number(price) < 10} onClick={save}>
           {busy ? "Saving…" : "Save changes"}
         </button>
-        {msg && <p className={`mt-3 text-sm font-medium ${msg === "Saved" ? "text-palm" : "text-red-700"}`}>{msg}</p>}
+        {msg && <p className={`mt-3 text-sm font-medium ${msg === "Saved" ? "text-palm" : "text-[#b42318]"}`}>{msg}</p>}
       </Panel>
     </div>
   );

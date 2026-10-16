@@ -1,56 +1,54 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
 import { Bell } from "./Bell";
+import { useMe } from "@/lib/useMe";
+
+export function homeFor(role: string | null | undefined) {
+  return role === "provider" ? "/provider" : role === "customer" ? "/account" : role === "admin" ? "/admin" : "/login";
+}
 
 export function SiteHeader() {
-  const [user, setUser] = useState<{ id: string; name: string; role: string | null } | null>(null);
+  const { me } = useMe();
+  const path = usePathname();
 
-  useEffect(() => {
-    const supabase = createClient();
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
-        setUser(null);
-        return;
-      }
-      const id = session.user.id;
-      setTimeout(async () => {
-        const { data: profile } = await supabase.from("profiles").select("name, role").eq("id", id).maybeSingle();
-        setUser({ id, name: profile?.name ?? "My account", role: profile?.role ?? null });
-      }, 0);
-    });
-    return () => data.subscription.unsubscribe();
-  }, []);
-
-  const home =
-    user?.role === "provider" ? "/provider" : user?.role === "customer" ? "/account" : user?.role === "admin" ? "/admin" : "/login";
+  const links = [
+    ["/browse", "Services"],
+    ["/#how", "How it works"],
+    ...(me?.role === "provider" ? [] : [["/#providers", "For providers"]]),
+    ["/support", "Help"],
+  ];
 
   return (
-    <header className="bg-paper">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
         <Logo />
-        <nav className="flex items-center gap-2 text-[15px] font-medium text-muted sm:gap-5">
-          <Link href="/browse" className="hidden hover:text-ink md:inline">Services</Link>
-          <Link href="/#how" className="hidden hover:text-ink md:inline">How it works</Link>
-          {user?.role !== "provider" && <Link href="/#providers" className="hidden hover:text-ink lg:inline">For providers</Link>}
-          <Link href="/support" className="hidden hover:text-ink md:inline">Help</Link>
-          {user && user.role && <Bell userId={user.id} />}
-          {user && user.role && (
-            <Link href="/settings" aria-label="Settings" className="hidden h-10 w-10 items-center justify-center rounded-full hover:bg-mist sm:flex">
-              <svg viewBox="0 0 24 24" className="h-6 w-6 text-ink" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
-              </svg>
+        <nav className="flex items-center gap-1 sm:gap-2" aria-label="Site">
+          {links.map(([href, label]) => (
+            <Link key={href} href={href}
+              className={`hidden rounded-full px-3 py-2 text-[15px] font-medium md:inline-block ${path === href ? "bg-soft text-ink" : "text-muted hover:text-ink"}`}>
+              {label}
+            </Link>
+          ))}
+          {me && <Bell userId={me.id} />}
+          {me === null && (
+            <Link href="/login" className="ml-1 inline-flex min-h-11 items-center rounded-full bg-palm px-5 font-semibold text-white hover:bg-palm-deep">
+              Log in
             </Link>
           )}
-          <Link href={home} className="max-w-[10rem] truncate rounded-full border border-ink px-4 py-2 text-ink hover:bg-ink hover:text-white">
-            {user ? user.name : "Log in"}
-          </Link>
+          {me && (
+            <Link href={homeFor(me.role)}
+              className="ml-1 hidden min-h-11 max-w-[12rem] items-center gap-2 truncate rounded-full border border-line-strong py-1 pl-1 pr-4 font-semibold text-ink hover:bg-soft md:inline-flex">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-palm-50 text-sm font-bold text-palm-deep">
+                {me.name.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="truncate">{me.name}</span>
+            </Link>
+          )}
         </nav>
       </div>
-      <div className="sadu" />
     </header>
   );
 }

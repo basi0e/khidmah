@@ -37,27 +37,27 @@ export default function ResetPasswordPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 bg-mist px-4 py-14 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-md">
           <Panel>
             {ready === null && <p className="text-muted">Checking your link…</p>}
             {ready === false && (
               <>
-                <h1 className="font-display text-3xl font-bold">This link has expired</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">This link has expired</h1>
                 <p className="mt-2 text-muted">Request a new one from the login page with Forgot password.</p>
                 <Link href="/login" className={`${primaryBtn} mt-5 inline-block`}>Back to log in</Link>
               </>
             )}
             {ready && !done && (
               <>
-                <h1 className="font-display text-3xl font-bold">Set a new password</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">Set a new password</h1>
                 <label className={`${labelCls} mt-6`} htmlFor="pw">New password</label>
                 <input id="pw" className={inputCls} type="password" autoComplete="new-password"
                   placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
                 <label className={`${labelCls} mt-4`} htmlFor="pw2">Repeat it</label>
                 <input id="pw2" className={inputCls} type="password" autoComplete="new-password"
                   value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-                {confirm && password !== confirm && <p className="mt-2 text-sm text-red-700">The passwords don&apos;t match.</p>}
+                {confirm && password !== confirm && <p className="mt-2 text-sm text-[#b42318]">The passwords don&apos;t match.</p>}
                 <button className={`${primaryBtn} mt-5 w-full`} disabled={busy || !valid} onClick={save}>
                   {busy ? "Saving…" : "Save new password"}
                 </button>
@@ -65,12 +65,12 @@ export default function ResetPasswordPage() {
             )}
             {done && (
               <>
-                <h1 className="font-display text-3xl font-bold">Password saved</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">Password saved</h1>
                 <p className="mt-2 text-muted">You&apos;re logged in and can use the new password next time.</p>
                 <Link href="/login" className={`${primaryBtn} mt-5 inline-block`}>Continue</Link>
               </>
             )}
-            {message && <p className="mt-4 text-sm font-medium text-red-700">{message}</p>}
+            {message && <p className="mt-4 text-sm font-medium text-[#b42318]">{message}</p>}
           </Panel>
         </div>
       </main>

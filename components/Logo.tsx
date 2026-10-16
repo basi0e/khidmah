@@ -8,7 +8,7 @@ export function Logo({ light = false }: { light?: boolean }) {
         <path d="M16 9l7 7-7 7-7-7z" fill="#f2b33d" />
         <path d="M16 13.5l2.5 2.5-2.5 2.5-2.5-2.5z" fill={light ? "#1b2430" : "#ffffff"} />
       </svg>
-      <span className={`font-display text-2xl font-extrabold tracking-tight ${light ? "text-white" : "text-ink"}`}>
+      <span className={`text-xl font-bold tracking-tight ${light ? "text-white" : "text-ink"}`}>
         Khidmah
       </span>
     </Link>

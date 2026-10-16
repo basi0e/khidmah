@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, IBM_Plex_Sans } from "next/font/google";
+import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { SiteFooter } from "@/components/SiteFooter";
-
-const display = Bricolage_Grotesque({
-  variable: "--font-bricolage",
-  subsets: ["latin"],
-  weight: ["500", "700", "800"],
-});
+import { BottomNav } from "@/components/BottomNav";
 
 const body = IBM_Plex_Sans({
   variable: "--font-plex",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -23,10 +18,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
+    <html lang="en" className={`${body.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         {children}
         <SiteFooter />
+        <BottomNav />
       </body>
     </html>
   );

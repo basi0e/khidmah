@@ -65,12 +65,12 @@ export default function ProviderProfilePage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 bg-mist px-4 py-12 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-4xl">
           {p === undefined && <p className="text-muted">Loading…</p>}
           {p === null && (
             <Panel>
-              <h1 className="font-display text-3xl font-bold">Provider not found</h1>
+              <h1 className="text-2xl font-bold sm:text-3xl">Provider not found</h1>
               <p className="mt-2 text-muted">This profile may have been removed.</p>
               <Link href="/browse" className={`${primaryBtn} mt-5 inline-block`}>Browse services</Link>
             </Panel>
@@ -80,12 +80,12 @@ export default function ProviderProfilePage() {
               <div className="space-y-6">
                 <Panel>
                   <div className="flex flex-wrap items-start gap-5">
-                    <span className="flex h-20 w-20 items-center justify-center rounded-full bg-sun font-display text-3xl font-bold">
+                    <span className="flex h-20 w-20 items-center justify-center rounded-full bg-sun text-2xl font-bold sm:text-3xl">
                       {p.profile.name.slice(0, 2).toUpperCase()}
                     </span>
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="font-display text-3xl font-bold">{p.profile.name}</h1>
+                        <h1 className="text-2xl font-bold sm:text-3xl">{p.profile.name}</h1>
                         {p.status === "Verified" && <span className="rounded-full bg-palm px-3 py-1 text-sm font-semibold text-white">Verified</span>}
                       </div>
                       <p className="text-muted">{p.provider_type} in {p.profile.city}{p.experience ? `, ${p.experience}` : ""}</p>
@@ -103,7 +103,7 @@ export default function ProviderProfilePage() {
                 </Panel>
 
                 <Panel>
-                  <h2 className="font-display text-2xl font-bold">Reviews</h2>
+                  <h2 className="text-xl font-bold">Reviews</h2>
                   {reviews.length === 0 && <p className="mt-3 text-muted">No reviews yet. Reviews appear after completed jobs.</p>}
                   <ul className="mt-4 space-y-5">
                     {reviews.map((r) => (
@@ -127,7 +127,7 @@ export default function ProviderProfilePage() {
                   {p.price_from != null && (
                     <p>
                       <span className="text-muted">{p.services.includes("rooms") ? "Rent from" : "Starting price"}</span><br />
-                      <span className="font-display text-3xl font-bold">SAR {p.price_from}</span>
+                      <span className="text-2xl font-bold sm:text-3xl">SAR {p.price_from}</span>
                     </p>
                   )}
                   <h2 className="mt-5 font-semibold">Book a service</h2>
@@ -183,7 +183,7 @@ function ReplyBox({ bookingId, onSaved }: { bookingId: string; onSaved: () => vo
     <div className="mt-3">
       <textarea className={inputCls} rows={2} maxLength={1000} placeholder="Reply publicly to this review" value={text} onChange={(e) => setText(e.target.value)} />
       <button className={`${primaryBtn} mt-2 !py-2`} disabled={!text.trim()} onClick={save}>Post reply</button>
-      {msg && <p className="mt-2 text-sm text-red-700">{msg}</p>}
+      {msg && <p className="mt-2 text-sm text-[#b42318]">{msg}</p>}
     </div>
   );
 }

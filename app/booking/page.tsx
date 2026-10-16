@@ -96,18 +96,18 @@ export default function BookingDetailPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 bg-mist px-4 py-12 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-5xl">
           {me === null && (
             <Panel>
-              <h1 className="font-display text-3xl font-bold">Log in to see this booking</h1>
+              <h1 className="text-2xl font-bold sm:text-3xl">Log in to see this booking</h1>
               <Link href={`/login?next=${encodeURIComponent(`/booking?id=${id ?? ""}`)}`} className={`${primaryBtn} mt-5 inline-block`}>Log in</Link>
             </Panel>
           )}
           {me && b === undefined && <p className="text-muted">Loading…</p>}
           {me && b === null && (
             <Panel>
-              <h1 className="font-display text-3xl font-bold">Booking not found</h1>
+              <h1 className="text-2xl font-bold sm:text-3xl">Booking not found</h1>
               <p className="mt-2 text-muted">It may belong to another account.</p>
               <Link href={backHref} className={`${primaryBtn} mt-5 inline-block`}>Back</Link>
             </Panel>
@@ -117,9 +117,9 @@ export default function BookingDetailPage() {
             <>
               <Link href={backHref} className="text-[15px] font-semibold text-muted underline hover:text-ink">← Back</Link>
               <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_22rem]">
-                <section className="flex flex-col rounded-3xl bg-paper" aria-label="Messages">
+                <section className="flex flex-col rounded-2xl bg-paper shadow-card" aria-label="Messages">
                   <div className="border-b border-line p-5">
-                    <h1 className="font-display text-2xl font-bold">Messages with {other}</h1>
+                    <h1 className="text-xl font-bold">Messages with {other}</h1>
                     {phone && <p className="text-[15px]">Phone: <a className="font-semibold text-palm underline" href={`tel:${phone}`}>{phone}</a></p>}
                   </div>
                   <ol className="flex max-h-[60vh] min-h-[18rem] flex-1 flex-col gap-3 overflow-y-auto p-5">
@@ -155,18 +155,18 @@ export default function BookingDetailPage() {
                       {me.role === "admin" ? "Admins can read messages but not reply here." : "Messaging is closed for this booking."}
                     </p>
                   )}
-                  {error && <p className="px-4 pb-4 text-sm font-medium text-red-700">{error}</p>}
+                  {error && <p className="px-4 pb-4 text-sm font-medium text-[#b42318]">{error}</p>}
                 </section>
 
                 <aside className="space-y-6">
-                  <div className="rounded-3xl bg-paper p-5">
+                  <div className="rounded-2xl bg-paper shadow-card p-5">
                     <BookingHeader b={b} who={other} />
                     <Progress status={b.status} kind={b.kind} />
                     {b.address && <p className="mt-4 text-[15px]"><span className="text-muted">Address: </span>{b.address}</p>}
                     {b.note && <p className="mt-2 text-[15px]"><span className="text-muted">Note: </span>{b.note}</p>}
                     {one(b.bill) && <BillView bill={one(b.bill)!} />}
                   </div>
-                  <div className="rounded-3xl bg-paper p-5">
+                  <div className="rounded-2xl bg-paper shadow-card p-5">
                     <h2 className="font-semibold">History</h2>
                     <ol className="mt-3 space-y-2 border-l-2 border-line pl-4 text-[15px]">
                       {events.map((e) => (

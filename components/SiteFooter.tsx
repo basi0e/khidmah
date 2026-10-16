@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
 
 const LINKS = [
@@ -11,6 +14,9 @@ const LINKS = [
 ];
 
 export function SiteFooter() {
+  const path = usePathname();
+  // Focused flows (booking form, chat) keep the screen to themselves
+  if (path.startsWith("/request") || path.startsWith("/booking")) return null;
   return (
     <footer className="bg-ink text-white">
       <div className="sadu" />

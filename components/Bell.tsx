@@ -78,7 +78,7 @@ export function Bell({ userId }: { userId: string }) {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border-2 border-ink bg-paper shadow-[4px_4px_0_0_var(--color-ink)]">
+        <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-line-strong bg-paper shadow-card">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <p className="font-semibold text-ink">Notifications</p>
             {unread > 0 && <button className="text-sm text-muted underline hover:text-ink" onClick={readAll}>Mark all read</button>}

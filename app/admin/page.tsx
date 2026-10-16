@@ -104,13 +104,13 @@ export default function AdminPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 bg-mist px-4 py-12 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-6xl">
           {me === undefined && <p className="text-muted">Loading…</p>}
           {me === null && (
             <div className="mx-auto max-w-md">
               <Panel>
-                <h1 className="font-display text-3xl font-bold">Admin login</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">Admin login</h1>
                 <Link href="/login?next=/admin" className={`${primaryBtn} mt-5 inline-block`}>Log in</Link>
               </Panel>
             </div>
@@ -118,7 +118,7 @@ export default function AdminPage() {
           {me && me.role !== "admin" && (
             <div className="mx-auto max-w-md">
               <Panel>
-                <h1 className="font-display text-3xl font-bold">Admins only</h1>
+                <h1 className="text-2xl font-bold sm:text-3xl">Admins only</h1>
                 <p className="mt-2 text-muted">This account doesn&apos;t have access to the admin page.</p>
                 <Link href="/" className={`${primaryBtn} mt-5 inline-block`}>Back to home</Link>
               </Panel>
@@ -129,7 +129,7 @@ export default function AdminPage() {
             <>
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <h1 className="font-display text-4xl font-bold tracking-tight">Khidmah admin</h1>
+                  <h1 className="text-[26px] font-bold tracking-tight sm:text-4xl">Khidmah admin</h1>
                   <p className="mt-1 text-muted">Logged in as {me.name}</p>
                 </div>
                 <button className={ghostBtn} onClick={load}>Refresh</button>
@@ -139,7 +139,7 @@ export default function AdminPage() {
                 {stats.map((s) => (
                   <div key={s.label} className={`rounded-2xl p-4 ${s.alert ? "bg-sun/30" : "bg-paper"}`}>
                     <dt className="text-sm text-muted">{s.label}</dt>
-                    <dd className="mt-1 font-display text-3xl font-bold tabular-nums">{s.value}</dd>
+                    <dd className="mt-1 text-2xl font-bold sm:text-3xl tabular-nums">{s.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -164,7 +164,7 @@ export default function AdminPage() {
                 {tab === "users" && <UsersTab rows={users} meId={me.id} onChange={load} />}
                 {tab === "support" && <SupportTab rows={tickets} adminId={me.id} onChange={load} />}
               </div>
-              {error && <p className="mt-4 font-medium text-red-700">{error}</p>}
+              {error && <p className="mt-4 font-medium text-[#b42318]">{error}</p>}
             </>
           )}
         </div>
@@ -174,7 +174,7 @@ export default function AdminPage() {
 }
 
 function Empty({ text }: { text: string }) {
-  return <div className="rounded-3xl bg-paper p-8 text-center text-muted">{text}</div>;
+  return <div className="rounded-2xl bg-paper shadow-card p-8 text-center text-muted">{text}</div>;
 }
 
 /* ---------- Providers ---------- */
@@ -241,7 +241,7 @@ function ProviderCard({ p, onChange }: { p: ProviderRow; onChange: () => void })
     p.status === "Rejected" ? "bg-red-100 text-red-800" : "bg-sun/30 text-ink";
 
   return (
-    <article className="rounded-3xl bg-paper p-5 sm:p-6">
+    <article className="rounded-2xl bg-paper shadow-card p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="font-display text-xl font-bold">{p.profile?.name ?? "Unnamed provider"}</h3>
@@ -283,12 +283,12 @@ function ProviderCard({ p, onChange }: { p: ProviderRow; onChange: () => void })
         {p.status !== "Verified" && <button className={primaryBtn} disabled={busy} onClick={() => setStatus("Verified")}>Approve</button>}
         {p.status === "Pending verification" && <button className={ghostBtn} disabled={busy} onClick={() => setStatus("Under review")}>Mark under review</button>}
         {p.status !== "Rejected" && (
-          <button className="font-semibold text-red-700 underline" disabled={busy} onClick={() => setStatus("Rejected")}>
+          <button className="font-semibold text-[#b42318] underline" disabled={busy} onClick={() => setStatus("Rejected")}>
             {p.status === "Verified" ? "Revoke and reject" : "Reject"}
           </button>
         )}
       </div>
-      {msg && <p className="mt-3 text-sm font-medium text-red-700">{msg}</p>}
+      {msg && <p className="mt-3 text-sm font-medium text-[#b42318]">{msg}</p>}
     </article>
   );
 }
@@ -345,7 +345,7 @@ function BookingsTab({ rows, onChange }: { rows: AdminBooking[] | null; onChange
       {shown.length === 0 ? (
         <div className="mt-4"><Empty text="No bookings match." /></div>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-3xl bg-paper">
+        <div className="mt-4 overflow-x-auto rounded-2xl bg-paper shadow-card">
           <table className="w-full min-w-[820px] text-left text-[15px]">
             <thead className="border-b border-line text-sm text-muted">
               <tr>
@@ -365,7 +365,7 @@ function BookingsTab({ rows, onChange }: { rows: AdminBooking[] | null; onChange
                   <tr key={b.id} className="border-b border-line last:border-0 align-top">
                     <td className="px-4 py-3">
                       <Link href={`/booking?id=${b.id}`} className="text-sm tabular-nums text-palm underline">{b.ref}</Link>
-                      <br />{b.service}{b.urgent && <span className="ml-1 font-bold text-red-700">urgent</span>}
+                      <br />{b.service}{b.urgent && <span className="ml-1 font-bold text-[#b42318]">urgent</span>}
                     </td>
                     <td className="px-4 py-3">{b.customer?.name ?? "Deleted"}<br /><span className="text-sm text-muted">{b.customer_phone ?? ""}</span></td>
                     <td className="px-4 py-3">{b.provider?.name ?? "Deleted"}</td>
@@ -376,7 +376,7 @@ function BookingsTab({ rows, onChange }: { rows: AdminBooking[] | null; onChange
                     <td className="px-4 py-3 text-right tabular-nums">{bill ? `SAR ${Number(bill.total).toFixed(2)}` : "–"}</td>
                     <td className="px-4 py-3 text-right">
                       {ACTIVE.includes(b.status) && (
-                        <button className="text-sm font-semibold text-red-700 underline" onClick={() => cancel(b)}>Cancel</button>
+                        <button className="text-sm font-semibold text-[#b42318] underline" onClick={() => cancel(b)}>Cancel</button>
                       )}
                     </td>
                   </tr>
@@ -386,7 +386,7 @@ function BookingsTab({ rows, onChange }: { rows: AdminBooking[] | null; onChange
           </table>
         </div>
       )}
-      {msg && <p className="mt-3 text-sm font-medium text-red-700">{msg}</p>}
+      {msg && <p className="mt-3 text-sm font-medium text-[#b42318]">{msg}</p>}
     </>
   );
 }
@@ -489,7 +489,7 @@ function UsersTab({ rows, meId, onChange }: { rows: UserRow[] | null; meId: stri
       {shown.length === 0 ? (
         <div className="mt-4"><Empty text="No accounts match." /></div>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-3xl bg-paper">
+        <div className="mt-4 overflow-x-auto rounded-2xl bg-paper shadow-card">
           <table className="w-full min-w-[760px] text-left text-[15px]">
             <thead className="border-b border-line text-sm text-muted">
               <tr>
@@ -510,7 +510,7 @@ function UsersTab({ rows, meId, onChange }: { rows: UserRow[] | null; meId: stri
                   </td>
                   <td className="px-4 py-3">
                     {u.role ? <span className="capitalize">{u.role}</span> : <span className="rounded-full bg-sun/30 px-2.5 py-0.5 text-sm">Unfinished sign-up</span>}
-                    {u.disabled && <><br /><span className="text-sm font-semibold text-red-700">Disabled</span></>}
+                    {u.disabled && <><br /><span className="text-sm font-semibold text-[#b42318]">Disabled</span></>}
                   </td>
                   <td className="px-4 py-3">{u.city ?? "–"}</td>
                   <td className="px-4 py-3">{when(u.created_at)}</td>
@@ -521,7 +521,7 @@ function UsersTab({ rows, meId, onChange }: { rows: UserRow[] | null; meId: stri
                         <button className="text-sm font-semibold underline" disabled={busy === u.id} onClick={() => toggleDisabled(u)}>
                           {u.disabled ? "Enable" : "Disable"}
                         </button>
-                        <button className="text-sm font-semibold text-red-700 underline" disabled={busy === u.id} onClick={() => remove(u)}>
+                        <button className="text-sm font-semibold text-[#b42318] underline" disabled={busy === u.id} onClick={() => remove(u)}>
                           Delete
                         </button>
                       </div>
@@ -533,7 +533,7 @@ function UsersTab({ rows, meId, onChange }: { rows: UserRow[] | null; meId: stri
           </table>
         </div>
       )}
-      {msg && <p className="mt-3 text-sm font-medium text-red-700">{msg}</p>}
+      {msg && <p className="mt-3 text-sm font-medium text-[#b42318]">{msg}</p>}
     </>
   );
 }
@@ -574,7 +574,7 @@ function TicketCard({ t, adminId, onChange }: { t: Ticket; adminId: string; onCh
   }
 
   return (
-    <article className="rounded-3xl bg-paper p-5 sm:p-6">
+    <article className="rounded-2xl bg-paper shadow-card p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="font-display text-xl font-bold">{t.subject}</h3>
@@ -602,7 +602,7 @@ function TicketCard({ t, adminId, onChange }: { t: Ticket; adminId: string; onCh
       {t.status === "Resolved" && (
         <button className="mt-4 text-sm font-semibold underline" disabled={busy} onClick={() => setStatus("Open")}>Reopen</button>
       )}
-      {msg && <p className="mt-3 text-sm font-medium text-red-700">{msg}</p>}
+      {msg && <p className="mt-3 text-sm font-medium text-[#b42318]">{msg}</p>}
     </article>
   );
 }

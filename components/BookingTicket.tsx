@@ -7,7 +7,7 @@ export function BookingTicket() {
       <p className="text-sm text-white/70">Example booking</p>
       <div className="mt-3 flex items-start justify-between gap-4">
         <div>
-          <p className="font-display text-2xl font-bold">AC deep cleaning</p>
+          <p className="text-xl font-bold">AC deep cleaning</p>
           <p className="mt-1 text-white/80">Al Malqa, Riyadh</p>
         </div>
         <span className="rounded-full bg-white/10 px-3 py-1 text-sm tabular-nums">KH-1042</span>

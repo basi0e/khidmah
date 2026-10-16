@@ -1,29 +1,38 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #1b2430;
+  --color-ink: #14202b;
   --color-paper: #ffffff;
-  --color-mist: #edf3ef;
+  --color-mist: #f5f7f6;
+  --color-soft: #eef2f0;
   --color-palm: #0e6b57;
   --color-palm-deep: #0a4f41;
+  --color-palm-50: #e7f2ec;
   --color-sun: #f2b33d;
-  --color-line: #d8e0db;
-  --color-muted: #56626c;
+  --color-sun-50: #fdf3da;
+  --color-sun-ink: #4a3a12;
+  --color-line: #e3e9e5;
+  --color-line-strong: #d5ddd8;
+  --color-muted: #5b6872;
+  --shadow-card: 0 1px 2px rgb(20 32 43 / 0.06), 0 6px 20px rgb(20 32 43 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(20 32 43 / 0.06), 0 12px 32px rgb(20 32 43 / 0.10);
 }
 
 @theme inline {
-  --font-display: var(--font-bricolage);
+  --font-display: var(--font-plex);
   --font-sans: var(--font-plex);
 }
 
+html { -webkit-tap-highlight-color: transparent; }
+
 body {
-  background: var(--color-paper);
+  background: var(--color-mist);
   color: var(--color-ink);
   font-family: var(--font-plex), system-ui, sans-serif;
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-sun);
+  outline: 3px solid var(--color-palm);
   outline-offset: 2px;
 }
 
@@ -55,9 +64,14 @@ body {
 
 /* Long-form text pages (FAQ, terms, privacy) */
 .prose-k { line-height: 1.7; font-size: 17px; }
-.prose-k h2 { font-family: var(--font-bricolage), system-ui, sans-serif; font-weight: 700; font-size: 1.5rem; margin: 2.25rem 0 0.75rem; line-height: 1.25; }
+.prose-k h2 { font-weight: 700; font-size: 1.5rem; margin: 2.25rem 0 0.75rem; line-height: 1.25; }
 .prose-k h3 { font-weight: 600; font-size: 1.125rem; margin: 1.5rem 0 0.25rem; }
 .prose-k p { margin: 0 0 1rem; }
 .prose-k ul { list-style: disc; padding-left: 1.4rem; margin: 0 0 1rem; }
 .prose-k li { margin: 0.25rem 0; }
 .prose-k a { color: var(--color-palm); text-decoration: underline; }
+
+/* Hide scrollbars on horizontal chip rows while keeping them scrollable */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+

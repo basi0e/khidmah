@@ -59,10 +59,10 @@ export default function SupportPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 bg-mist px-4 py-12 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-2xl space-y-6">
           <div>
-            <h1 className="font-display text-4xl font-bold tracking-tight">Contact support</h1>
+            <h1 className="text-[26px] font-bold tracking-tight sm:text-4xl">Contact support</h1>
             <p className="mt-2 text-muted">
               A problem with a booking, a provider or your account? Tell us here. Quick answers are on the <Link href="/faq" className="text-palm underline">FAQ page</Link>.
             </p>
@@ -94,7 +94,7 @@ export default function SupportPage() {
               <button className={`${primaryBtn} mt-5`} disabled={busy || subject.trim().length < 3 || body.trim().length < 5} onClick={submit}>
                 {busy ? "Sending…" : "Send to support"}
               </button>
-              {msg && <p className={`mt-3 text-sm font-medium ${msg.startsWith("✓") ? "text-palm" : "text-red-700"}`}>{msg}</p>}
+              {msg && <p className={`mt-3 text-sm font-medium ${msg.startsWith("✓") ? "text-palm" : "text-[#b42318]"}`}>{msg}</p>}
             </Panel>
           )}
           {me?.role === "admin" && (
@@ -105,10 +105,10 @@ export default function SupportPage() {
 
           {tickets && tickets.length > 0 && (
             <section>
-              <h2 className="font-display text-2xl font-bold">Your requests</h2>
+              <h2 className="text-xl font-bold">Your requests</h2>
               <ul className="mt-4 space-y-3">
                 {tickets.map((t) => (
-                  <li key={t.id} className="rounded-3xl bg-paper p-5">
+                  <li key={t.id} className="rounded-2xl bg-paper shadow-card p-5">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
                         <p className="font-display text-lg font-bold">{t.subject}</p>
